@@ -483,6 +483,60 @@ private theorem prereleaseFloorAtCore_is_prerelease
   simp [prereleaseFloorAtCore]
 
 /--
+The canonical `-0` prerelease floor never lies above a prerelease version on
+the same core.
+-/
+private theorem prereleaseFloorAtCore_precedence_ne_gt
+    (version : Version)
+    (hPrerelease : version.prerelease.isEmpty = false) :
+    Version.precedence (prereleaseFloorAtCore version) version ≠ .gt := by
+  cases hVersionPrerelease : version.prerelease with
+  | nil =>
+      simp [hVersionPrerelease] at hPrerelease
+  | cons head tail =>
+      cases head with
+      | numeric value =>
+          cases value with
+          | zero =>
+              cases tail with
+              | nil =>
+                  simp [
+                    Version.precedence,
+                    Version.precedenceKey,
+                    PrecedenceKey.ordering,
+                    prereleaseFloorAtCore,
+                    hVersionPrerelease,
+                    PrereleaseIdentifier.precedence
+                  ]
+              | cons next rest =>
+                  simp [
+                    Version.precedence,
+                    Version.precedenceKey,
+                    PrecedenceKey.ordering,
+                    prereleaseFloorAtCore,
+                    hVersionPrerelease,
+                    PrereleaseIdentifier.precedence
+                  ]
+          | succ value =>
+              simp [
+                Version.precedence,
+                Version.precedenceKey,
+                PrecedenceKey.ordering,
+                prereleaseFloorAtCore,
+                hVersionPrerelease,
+                PrereleaseIdentifier.precedence
+              ]
+      | text value =>
+          simp [
+            Version.precedence,
+            Version.precedenceKey,
+            PrecedenceKey.ordering,
+            prereleaseFloorAtCore,
+            hVersionPrerelease,
+            PrereleaseIdentifier.precedence
+          ]
+
+/--
 A prerelease comparator bound contributes the prerelease floor at its core to
 the existing critical-boundary pool.
 -/
