@@ -57,6 +57,6 @@ example :
     (parsedRange ">=1.2.3 || ").satisfies (version "0.1.0") = true := by
   native_decide
 
--- Advanced range sugar is still rejected by branch parsing.
-example : Range.parse? "^1.2.3 || ~2.0.0" = none := by
+-- Supported advanced frontends can coexist across range branches.
+example : (Range.parse? "^1.2.3 || ~2.0.0").isSome = true := by
   native_decide
