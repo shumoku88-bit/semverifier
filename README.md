@@ -36,9 +36,11 @@ Primitive comparator parsing and satisfaction (`< <= > >= =`) are now part of th
 
 Range union (`||`) is now modeled as a union of comparator-set intersections.
 
-Advanced syntax such as `^1.2.3`, `~1.2`, wildcards, partial versions, and
-hyphen ranges remains intentionally out of scope until the core range algebra
-is small and clear.
+Full-version caret syntax such as `^1.2.3`, `^0.2.3`, and `^0.0.3` is now
+desugared into the existing comparator-set kernel.
+
+Tilde syntax, wildcards, partial versions, and hyphen ranges remain
+intentionally out of scope.
 
 ## Design rule
 
