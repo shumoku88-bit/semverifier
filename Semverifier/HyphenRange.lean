@@ -20,12 +20,12 @@ private def stableVersion (major minor patch : Nat) : Version :=
 
 private inductive Endpoint where
   | full (version : Version)
-  | partial (shape : XRange.Partial)
+  | incomplete (shape : XRange.Partial)
 
 private def parseEndpoint? (raw : String) : Option Endpoint :=
   match Version.parse? raw with
   | some version => some (.full version)
-  | none => (XRange.parsePartial? raw).map Endpoint.partial
+  | none => (XRange.parsePartial? raw).map Endpoint.incomplete
 
 private def lowerComparators : Endpoint → List Comparator
   | .full version =>
@@ -35,16 +35,16 @@ private def lowerComparators : Endpoint → List Comparator
           bound := { version with build := [] }
         }
       ]
-  | .partial .any =>
+  | .incomplete .any =>
       []
-  | .partial (.major major) =>
+  | .incomplete (.major major) =>
       [
         {
           operator := .gte
           bound := stableVersion major 0 0
         }
       ]
-  | .partial (.minor major minor) =>
+  | .incomplete (.minor major minor) =>
       [
         {
           operator := .gte
@@ -60,16 +60,16 @@ private def upperComparators : Endpoint → List Comparator
           bound := { version with build := [] }
         }
       ]
-  | .partial .any =>
+  | .incomplete .any =>
       []
-  | .partial (.major major) =>
+  | .incomplete (.major major) =>
       [
         {
           operator := .lt
           bound := prereleaseFloor (major + 1) 0 0
         }
       ]
-  | .partial (.minor major minor) =>
+  | .incomplete (.minor major minor) =>
       [
         {
           operator := .lt
