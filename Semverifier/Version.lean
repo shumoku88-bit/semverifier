@@ -123,7 +123,7 @@ private theorem prereleaseIdentifier_precedence_swap
       cases right with
       | numeric rightValue =>
           simpa [PrereleaseIdentifier.precedence] using
-            (OrientedOrd.eq_swap
+            (Std.OrientedOrd.eq_swap
               (α := Nat)
               (a := leftValue)
               (b := rightValue))
@@ -135,7 +135,7 @@ private theorem prereleaseIdentifier_precedence_swap
           rfl
       | text rightValue =>
           simpa [PrereleaseIdentifier.precedence] using
-            (OrientedOrd.eq_swap
+            (Std.OrientedOrd.eq_swap
               (α := String)
               (a := leftValue.value)
               (b := rightValue.value))
