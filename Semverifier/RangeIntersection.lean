@@ -475,6 +475,24 @@ private def boundaryCandidates (comparator : Comparator) : List Version :=
     ]
 
 /--
+The canonical prerelease floor is itself a prerelease.
+-/
+private theorem prereleaseFloorAtCore_is_prerelease
+    (version : Version) :
+    (prereleaseFloorAtCore version).prerelease.isEmpty = false := by
+  simp [prereleaseFloorAtCore]
+
+/--
+A prerelease comparator bound contributes the prerelease floor at its core to
+the existing critical-boundary pool.
+-/
+private theorem prereleaseFloorAtCore_mem_boundary
+    (comparator : Comparator)
+    (hPrerelease : comparator.bound.prerelease.isEmpty = false) :
+    prereleaseFloorAtCore comparator.bound ∈ boundaryCandidates comparator := by
+  simp [boundaryCandidates, hPrerelease]
+
+/--
 One canonical stable lower-bound candidate contributed by a comparator.
 
 Upper-only comparators contribute the global minimum stable release. Inclusive
@@ -1219,6 +1237,89 @@ private theorem stableFloorMaximum_pair_satisfies_of_stable_witness
         comparator candidate witness
         hCandidateStable hWitnessStable
         hFloorCandidate hCandidateWitness hWitnessPrimitive
+
+/--
+Any pair of comparator sets sharing a prerelease witness has a generated
+same-core prerelease candidate that already passes both set-local admission
+gates.
+
+The remaining prerelease completeness work is therefore only about primitive
+comparator satisfaction.
+-/
+private theorem exists_pair_prerelease_candidate_with_admission
+    (left right : ComparatorSet)
+    (witness : Version)
+    (hWitnessPrerelease : witness.prerelease.isEmpty = false)
+    (hLeft : left.satisfies witness = true)
+    (hRight : right.satisfies witness = true) :
+    ∃ candidate,
+      candidate ∈ comparatorSetIntersectionCandidates left right ∧
+      candidate.prerelease.isEmpty = false ∧
+      candidate.major = witness.major ∧
+      candidate.minor = witness.minor ∧
+      candidate.patch = witness.patch ∧
+      left.prereleaseAdmitted candidate = true ∧
+      right.prereleaseAdmitted candidate = true := by
+  rcases
+      ComparatorSet.exists_prerelease_bound_same_core_of_satisfies
+        left witness hWitnessPrerelease hLeft with
+    ⟨anchor,
+      hAnchor,
+      hAnchorPrerelease,
+      hAnchorMajor,
+      hAnchorMinor,
+      hAnchorPatch⟩
+  let candidate := prereleaseFloorAtCore anchor.bound
+  have hBoundary :
+      candidate ∈ boundaryCandidates anchor := by
+    simpa [candidate] using
+      prereleaseFloorAtCore_mem_boundary anchor hAnchorPrerelease
+  have hLeftCandidates :
+      candidate ∈ comparatorSetCandidates left := by
+    simp only [comparatorSetCandidates, List.mem_flatMap]
+    exact ⟨anchor, hAnchor, hBoundary⟩
+  have hPairCandidate :
+      candidate ∈ comparatorSetIntersectionCandidates left right := by
+    simp [
+      comparatorSetIntersectionCandidates,
+      hLeftCandidates
+    ]
+  have hCandidatePrerelease :
+      candidate.prerelease.isEmpty = false := by
+    simpa [candidate] using
+      prereleaseFloorAtCore_is_prerelease anchor.bound
+  have hCandidateMajor :
+      candidate.major = witness.major := by
+    simpa [candidate, prereleaseFloorAtCore] using hAnchorMajor
+  have hCandidateMinor :
+      candidate.minor = witness.minor := by
+    simpa [candidate, prereleaseFloorAtCore] using hAnchorMinor
+  have hCandidatePatch :
+      candidate.patch = witness.patch := by
+    simpa [candidate, prereleaseFloorAtCore] using hAnchorPatch
+  have hLeftAdmission :
+      left.prereleaseAdmitted candidate = true := by
+    exact
+      ComparatorSet.prereleaseAdmitted_of_same_core_as_satisfied
+        left witness candidate
+        hWitnessPrerelease hLeft hCandidatePrerelease
+        hCandidateMajor hCandidateMinor hCandidatePatch
+  have hRightAdmission :
+      right.prereleaseAdmitted candidate = true := by
+    exact
+      ComparatorSet.prereleaseAdmitted_of_same_core_as_satisfied
+        right witness candidate
+        hWitnessPrerelease hRight hCandidatePrerelease
+        hCandidateMajor hCandidateMinor hCandidatePatch
+  exact
+    ⟨candidate,
+      hPairCandidate,
+      hCandidatePrerelease,
+      hCandidateMajor,
+      hCandidateMinor,
+      hCandidatePatch,
+      hLeftAdmission,
+      hRightAdmission⟩
 
 /--
 The local completeness obligation for one pair of comparator sets.
