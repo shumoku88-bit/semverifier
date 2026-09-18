@@ -50,8 +50,17 @@ comparator-set kernel. For example:
 - `*` becomes the unconstrained comparator set, which still excludes
   prereleases by default.
 
-Operator-prefixed partial versions such as `>1`, the `~>` alias, and hyphen
-ranges remain intentionally out of scope.
+Operator-prefixed partial versions and X-ranges use the same frontend and
+desugar to primitive comparator boundaries. For example:
+
+- `>1` becomes `>=2.0.0`;
+- `>1.2` becomes `>=1.3.0`;
+- `>=1.2` becomes `>=1.2.0`;
+- `<2.x` becomes `<2.0.0-0`;
+- `<=1.2.x` becomes `<1.3.0-0`.
+
+Partial-version caret/tilde syntax, the `~>` alias, and hyphen ranges remain
+intentionally out of scope.
 
 ## Design rule
 
@@ -64,8 +73,8 @@ not duplicate it as defensive convention.
 
 The supported subset is checked differentially against node-semver 7.8.5 in CI.
 The deterministic corpus currently includes primitive comparators, conjunction,
-union, prerelease admission, full-version caret/tilde syntax, and bare
-partial/X-ranges.
+union, prerelease admission, full-version caret/tilde syntax, bare
+partial/X-ranges, and operator-prefixed partial/X-ranges.
 
 A Lean executable generates a deterministic matrix of supported ranges and
 versions, evaluates every pair with Semverifier, and a small Node adapter checks
