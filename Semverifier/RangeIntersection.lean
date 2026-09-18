@@ -458,6 +458,12 @@ private def samePrereleaseCoreAs
     candidate.minor = reference.minor ∧
     candidate.patch = reference.patch
 
+private instance samePrereleaseCoreAs_decidable
+    (candidate reference : Version) :
+    Decidable (samePrereleaseCoreAs candidate reference) := by
+  unfold samePrereleaseCoreAs
+  infer_instance
+
 /--
 Maximum of two prerelease versions intended to lie on one fixed core.
 
@@ -695,6 +701,149 @@ private theorem prerelease_boundaries_mem_boundary
     strippedBound comparator.bound ∈ boundaryCandidates comparator ∧
       prereleaseSuccessor comparator.bound ∈ boundaryCandidates comparator := by
   simp [boundaryCandidates, hPrerelease]
+
+/--
+One canonical prerelease lower-bound candidate contributed by a comparator
+relative to a prerelease witness core.
+
+Only prerelease bounds on the witness core can tighten the prerelease floor.
+Strict lower bounds contribute the discrete successor `bound.0`; inclusive
+lower bounds and equality contribute the build-stripped bound itself. All
+other cases fall back to the canonical `-0` floor on the witness core.
+-/
+private def prereleaseLowerCandidate
+    (comparator : Comparator)
+    (witness : Version) : Version :=
+  match comparator.operator with
+  | .gt =>
+      if samePrereleaseCoreAs comparator.bound witness then
+        prereleaseSuccessor comparator.bound
+      else
+        prereleaseFloorAtCore witness
+  | .gte | .eq =>
+      if samePrereleaseCoreAs comparator.bound witness then
+        strippedBound comparator.bound
+      else
+        prereleaseFloorAtCore witness
+  | .lt | .lte =>
+      prereleaseFloorAtCore witness
+
+private theorem prereleaseFloorAtCore_same_core_as
+    (reference : Version) :
+    samePrereleaseCoreAs
+      (prereleaseFloorAtCore reference)
+      reference := by
+  simp [samePrereleaseCoreAs, prereleaseFloorAtCore]
+
+private theorem strippedBound_same_core_as
+    (bound reference : Version)
+    (hCore : samePrereleaseCoreAs bound reference) :
+    samePrereleaseCoreAs (strippedBound bound) reference := by
+  simpa [samePrereleaseCoreAs, strippedBound] using hCore
+
+private theorem prereleaseSuccessor_same_core_as
+    (bound reference : Version)
+    (hCore : samePrereleaseCoreAs bound reference) :
+    samePrereleaseCoreAs
+      (prereleaseSuccessor bound)
+      reference := by
+  rcases hCore with
+    ⟨hPrerelease, hMajor, hMinor, hPatch⟩
+  exact
+    ⟨prereleaseSuccessor_is_prerelease bound hPrerelease,
+      by simpa [prereleaseSuccessor, strippedBound] using hMajor,
+      by simpa [prereleaseSuccessor, strippedBound] using hMinor,
+      by simpa [prereleaseSuccessor, strippedBound] using hPatch⟩
+
+/--
+Every prerelease lower candidate remains on the witness core.
+-/
+private theorem prereleaseLowerCandidate_same_core_as
+    (comparator : Comparator)
+    (witness : Version) :
+    samePrereleaseCoreAs
+      (prereleaseLowerCandidate comparator witness)
+      witness := by
+  cases comparator with
+  | mk operator bound =>
+      cases operator with
+      | lt =>
+          exact prereleaseFloorAtCore_same_core_as witness
+      | lte =>
+          exact prereleaseFloorAtCore_same_core_as witness
+      | gt =>
+          by_cases hCore : samePrereleaseCoreAs bound witness
+          · simpa [prereleaseLowerCandidate, hCore] using
+              prereleaseSuccessor_same_core_as bound witness hCore
+          · simpa [prereleaseLowerCandidate, hCore] using
+              prereleaseFloorAtCore_same_core_as witness
+      | gte =>
+          by_cases hCore : samePrereleaseCoreAs bound witness
+          · simpa [prereleaseLowerCandidate, hCore] using
+              strippedBound_same_core_as bound witness hCore
+          · simpa [prereleaseLowerCandidate, hCore] using
+              prereleaseFloorAtCore_same_core_as witness
+      | eq =>
+          by_cases hCore : samePrereleaseCoreAs bound witness
+          · simpa [prereleaseLowerCandidate, hCore] using
+              strippedBound_same_core_as bound witness hCore
+          · simpa [prereleaseLowerCandidate, hCore] using
+              prereleaseFloorAtCore_same_core_as witness
+
+/--
+Each prerelease lower candidate is either the shared witness-core floor or an
+existing boundary candidate contributed by its comparator.
+-/
+private theorem prereleaseLowerCandidate_eq_floor_or_mem_boundary
+    (comparator : Comparator)
+    (witness : Version) :
+    prereleaseLowerCandidate comparator witness =
+        prereleaseFloorAtCore witness ∨
+      prereleaseLowerCandidate comparator witness ∈
+        boundaryCandidates comparator := by
+  cases comparator with
+  | mk operator bound =>
+      cases operator with
+      | lt =>
+          exact Or.inl (by simp [prereleaseLowerCandidate])
+      | lte =>
+          exact Or.inl (by simp [prereleaseLowerCandidate])
+      | gt =>
+          by_cases hCore : samePrereleaseCoreAs bound witness
+          · have hPrerelease :
+                bound.prerelease.isEmpty = false := hCore.1
+            have hMem :=
+              (prerelease_boundaries_mem_boundary
+                { operator := .gt, bound := bound }
+                hPrerelease).2
+            exact Or.inr (by
+              simpa [prereleaseLowerCandidate, hCore] using hMem)
+          · exact Or.inl (by
+              simp [prereleaseLowerCandidate, hCore])
+      | gte =>
+          by_cases hCore : samePrereleaseCoreAs bound witness
+          · have hPrerelease :
+                bound.prerelease.isEmpty = false := hCore.1
+            have hMem :=
+              (prerelease_boundaries_mem_boundary
+                { operator := .gte, bound := bound }
+                hPrerelease).1
+            exact Or.inr (by
+              simpa [prereleaseLowerCandidate, hCore] using hMem)
+          · exact Or.inl (by
+              simp [prereleaseLowerCandidate, hCore])
+      | eq =>
+          by_cases hCore : samePrereleaseCoreAs bound witness
+          · have hPrerelease :
+                bound.prerelease.isEmpty = false := hCore.1
+            have hMem :=
+              (prerelease_boundaries_mem_boundary
+                { operator := .eq, bound := bound }
+                hPrerelease).1
+            exact Or.inr (by
+              simpa [prereleaseLowerCandidate, hCore] using hMem)
+          · exact Or.inl (by
+              simp [prereleaseLowerCandidate, hCore])
 
 /--
 One canonical stable lower-bound candidate contributed by a comparator.
