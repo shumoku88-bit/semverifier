@@ -109,7 +109,38 @@ private def xRanges : List String :=
     "2.x.x"
   ]
 
+private def operatorXRanges : List String :=
+  [
+    ">0",
+    ">1",
+    ">1.2",
+    ">1.x",
+    ">1.2.x",
+    ">=0",
+    ">=1",
+    ">=1.2",
+    ">=1.x",
+    ">=1.2.x",
+    "<1",
+    "<1.2",
+    "<2.x",
+    "<1.2.x",
+    "<=0",
+    "<=1",
+    "<=1.2",
+    "<=1.x",
+    "<=1.2.x",
+    "=1",
+    "=1.2.x"
+  ]
+
 def ranges : List String :=
-  primitiveRanges ++ conjunctionRanges ++ unionRanges ++ caretRanges ++ tildeRanges ++ xRanges
+  primitiveRanges ++
+    conjunctionRanges ++
+    unionRanges ++
+    caretRanges ++
+    tildeRanges ++
+    xRanges ++
+    operatorXRanges
 
 end Semverifier.Conformance
