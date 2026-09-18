@@ -11,9 +11,12 @@ private def emitCase (rangeRaw versionRaw : String) : IO Unit := do
   | _, _ =>
       throw <| IO.userError s!"invalid generated conformance case: {rangeRaw} / {versionRaw}"
 
-def main : IO Unit := do
+def run : IO Unit := do
   for rangeRaw in ranges do
     for versionRaw in versions do
       emitCase rangeRaw versionRaw
 
 end Semverifier.Conformance
+
+def main : IO Unit :=
+  Semverifier.Conformance.run
