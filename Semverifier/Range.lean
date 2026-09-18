@@ -1,5 +1,6 @@
 import Semverifier.Caret
 import Semverifier.Tilde
+import Semverifier.XRange
 
 namespace Semverifier
 
@@ -26,7 +27,9 @@ private def parseTerm? (raw : String) : Option (List Comparator) :=
   else if raw.startsWith "~" then
     (Tilde.parse? raw).map (fun set => set.comparators)
   else
-    (Comparator.parse? raw).map (fun comparator => [comparator])
+    match Comparator.parse? raw with
+    | some comparator => some [comparator]
+    | none => (XRange.parse? raw).map (fun set => set.comparators)
 
 private def parseBranch? (raw : String) : Option ComparatorSet := do
   let chunks ← (branchTokens raw).mapM parseTerm?
@@ -35,9 +38,9 @@ private def parseBranch? (raw : String) : Option ComparatorSet := do
 /--
 Parse a range as `||`-separated comparator sets.
 
-Each branch accepts primitive comparators plus the advanced frontends that have
-already been defined. Full-version caret and tilde syntax are currently
-supported.
+Each branch accepts primitive comparators plus the frontends that have already
+been defined. Full-version caret and tilde syntax, bare partial versions, and
+X-ranges are currently supported.
 
 Empty branches are admitted because node-semver's empty range branch behaves as
 "any stable version" under default prerelease semantics.
