@@ -74,7 +74,15 @@ desugaring. This matters around zero-valued components. For example:
 - `^0` becomes `>=0.0.0 <1.0.0-0`;
 - `^*` becomes the unconstrained comparator set.
 
-The `~>` alias and hyphen ranges remain intentionally out of scope.
+Strict whole-branch hyphen ranges are also desugared into comparator sets. For
+example:
+
+- `1.2.3 - 2.3.4` becomes `>=1.2.3 <=2.3.4`;
+- `1.2 - 3.4.5` becomes `>=1.2.0 <=3.4.5`;
+- `1.2.3 - 3.4` becomes `>=1.2.3 <3.5.0-0`;
+- `1 - 2` becomes `>=1.0.0 <3.0.0-0`.
+
+The `~>` alias remains intentionally out of scope.
 
 ## Design rule
 
@@ -88,8 +96,8 @@ not duplicate it as defensive convention.
 The supported subset is checked differentially against node-semver 7.8.5 in CI.
 The deterministic corpus currently includes primitive comparators, conjunction,
 union, prerelease admission, full-version caret/tilde syntax, bare
-partial/X-ranges, operator-prefixed partial/X-ranges, partial tilde ranges, and
-partial caret ranges.
+partial/X-ranges, operator-prefixed partial/X-ranges, partial tilde ranges,
+partial caret ranges, and strict hyphen ranges.
 
 A Lean executable generates a deterministic matrix of supported ranges and
 versions, evaluates every pair with Semverifier, and a small Node adapter checks
