@@ -631,7 +631,7 @@ private theorem prereleaseCore_eq_of_isLE_of_reverse_isLE
           simp [hOrder, hReverse] at hSwap ⊢
       simp [hReverse] at hRightLeft
   | eq =>
-      exact hOrder
+      rfl
   | gt =>
       simp [hOrder] at hLeftRight
 
@@ -653,7 +653,7 @@ private theorem prereleaseCore_lt_of_isLE_of_lt
       hFirstSecond hSecondThirdLE
   cases hFirstThird : Version.precedence first third with
   | lt =>
-      exact hFirstThird
+      rfl
   | gt =>
       simp [hFirstThird] at hFirstThirdLE
   | eq =>
@@ -697,7 +697,7 @@ private theorem prereleaseCore_lt_of_lt_of_isLE
       hFirstSecondLE hSecondThird
   cases hFirstThird : Version.precedence first third with
   | lt =>
-      exact hFirstThird
+      rfl
   | gt =>
       simp [hFirstThird] at hFirstThirdLE
   | eq =>
