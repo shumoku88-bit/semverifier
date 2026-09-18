@@ -107,10 +107,25 @@ example :
     (tilde "~*").satisfies (version "9.9.9-alpha") = false := by
   native_decide
 
-example : Tilde.parse? "~>1.2.3" = none := by
+-- The npm ~> spelling is an exact alias for ~.
+example : Tilde.parse? "~>1.2.3" = Tilde.parse? "~1.2.3" := by
   native_decide
 
-example : Tilde.parse? "~>1.2" = none := by
+example : Tilde.parse? "~>1.2" = Tilde.parse? "~1.2" := by
+  native_decide
+
+example : Tilde.parse? "~>1" = Tilde.parse? "~1" := by
+  native_decide
+
+example : Tilde.parse? "~>*" = Tilde.parse? "~*" := by
+  native_decide
+
+example :
+    (tilde "~>1.2.3").satisfies (version "1.2.9") = true := by
+  native_decide
+
+example :
+    (tilde "~>1.2.3").satisfies (version "1.3.0") = false := by
   native_decide
 
 example : Tilde.parse? "~<1.2" = none := by
