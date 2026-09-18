@@ -42,6 +42,28 @@ private def prereleasePrecedence :
       | .eq => prereleasePrecedence leftRest rightRest
       | order => order
 
+private theorem prereleasePrecedence_eq_compareLex
+    (left right : List PrereleaseIdentifier) :
+    prereleasePrecedence left right =
+      List.compareLex PrereleaseIdentifier.precedence left right := by
+  induction left generalizing right with
+  | nil =>
+      cases right <;> rfl
+  | cons leftHead leftTail ih =>
+      cases right with
+      | nil =>
+          rfl
+      | cons rightHead rightTail =>
+          cases hHead :
+              PrereleaseIdentifier.precedence leftHead rightHead <;>
+            simp [
+              prereleasePrecedence,
+              List.compareLex,
+              hHead,
+              ih
+            ]
+
+
 private def releasePrecedence
     (left right : List PrereleaseIdentifier) : Ordering :=
   match left, right with
@@ -139,6 +161,61 @@ private theorem prereleaseIdentifier_precedence_swap
               (α := String)
               (a := leftValue.value)
               (b := rightValue.value))
+
+private instance prereleaseIdentifierPrecedenceTrans :
+    Std.TransCmp PrereleaseIdentifier.precedence where
+  eq_swap := by
+    intro left right
+    exact prereleaseIdentifier_precedence_swap left right
+  isLE_trans := by
+    intro first second third hFirstSecond hSecondThird
+    cases first with
+    | numeric firstValue =>
+        cases second with
+        | numeric secondValue =>
+            cases third with
+            | numeric thirdValue =>
+                have hFirstSecond' :
+                    (compare firstValue secondValue).isLE := by
+                  simpa [PrereleaseIdentifier.precedence] using hFirstSecond
+                have hSecondThird' :
+                    (compare secondValue thirdValue).isLE := by
+                  simpa [PrereleaseIdentifier.precedence] using hSecondThird
+                have hTrans :=
+                  Std.TransCmp.isLE_trans
+                    (cmp := compare)
+                    hFirstSecond'
+                    hSecondThird'
+                simpa [PrereleaseIdentifier.precedence] using hTrans
+            | text thirdValue =>
+                simp [PrereleaseIdentifier.precedence]
+        | text secondValue =>
+            cases third with
+            | numeric thirdValue =>
+                simp [PrereleaseIdentifier.precedence] at hSecondThird
+            | text thirdValue =>
+                simp [PrereleaseIdentifier.precedence]
+    | text firstValue =>
+        cases second with
+        | numeric secondValue =>
+            simp [PrereleaseIdentifier.precedence] at hFirstSecond
+        | text secondValue =>
+            cases third with
+            | numeric thirdValue =>
+                simp [PrereleaseIdentifier.precedence] at hSecondThird
+            | text thirdValue =>
+                have hFirstSecond' :
+                    (compare firstValue.value secondValue.value).isLE := by
+                  simpa [PrereleaseIdentifier.precedence] using hFirstSecond
+                have hSecondThird' :
+                    (compare secondValue.value thirdValue.value).isLE := by
+                  simpa [PrereleaseIdentifier.precedence] using hSecondThird
+                have hTrans :=
+                  Std.TransCmp.isLE_trans
+                    (cmp := compare)
+                    hFirstSecond'
+                    hSecondThird'
+                simpa [PrereleaseIdentifier.precedence] using hTrans
 
 /--
 The prerelease list `[0]` is never greater than any non-empty prerelease
@@ -361,6 +438,99 @@ theorem ordering_prerelease_append_zero_ne_gt_of_gt
             hBoundList,
             hWitnessList
           ] using hList
+
+private theorem prereleasePrecedence_isLE_trans
+    (first second third : List PrereleaseIdentifier)
+    (hFirstSecond : (prereleasePrecedence first second).isLE)
+    (hSecondThird : (prereleasePrecedence second third).isLE) :
+    (prereleasePrecedence first third).isLE := by
+  have hFirstSecond' :
+      (List.compareLex
+        PrereleaseIdentifier.precedence first second).isLE := by
+    rw [← prereleasePrecedence_eq_compareLex]
+    exact hFirstSecond
+  have hSecondThird' :
+      (List.compareLex
+        PrereleaseIdentifier.precedence second third).isLE := by
+    rw [← prereleasePrecedence_eq_compareLex]
+    exact hSecondThird
+  have hTrans :=
+    Std.TransCmp.isLE_trans
+      (cmp := List.compareLex PrereleaseIdentifier.precedence)
+      hFirstSecond'
+      hSecondThird'
+  rw [prereleasePrecedence_eq_compareLex]
+  exact hTrans
+
+/--
+SemVer precedence is transitive within one fixed core when all three values are
+prereleases.
+
+This is the order law needed to combine multiple generated prerelease lower
+boundaries without leaving the witness core.
+-/
+theorem ordering_prerelease_isLE_trans
+    (major minor patch : Nat)
+    (first second third : List PrereleaseIdentifier)
+    (hFirst : first.isEmpty = false)
+    (hSecond : second.isEmpty = false)
+    (hThird : third.isEmpty = false)
+    (hFirstSecond :
+      (ordering
+        { major := major, minor := minor, patch := patch, prerelease := first }
+        { major := major, minor := minor, patch := patch, prerelease := second }).isLE)
+    (hSecondThird :
+      (ordering
+        { major := major, minor := minor, patch := patch, prerelease := second }
+        { major := major, minor := minor, patch := patch, prerelease := third }).isLE) :
+    (ordering
+      { major := major, minor := minor, patch := patch, prerelease := first }
+      { major := major, minor := minor, patch := patch, prerelease := third }).isLE := by
+  cases hFirstList : first with
+  | nil =>
+      simp [hFirstList] at hFirst
+  | cons firstHead firstTail =>
+      cases hSecondList : second with
+      | nil =>
+          simp [hSecondList] at hSecond
+      | cons secondHead secondTail =>
+          cases hThirdList : third with
+          | nil =>
+              simp [hThirdList] at hThird
+          | cons thirdHead thirdTail =>
+              have hFirstSecondList :
+                  (prereleasePrecedence
+                    (firstHead :: firstTail)
+                    (secondHead :: secondTail)).isLE := by
+                simpa [
+                  ordering,
+                  releasePrecedence,
+                  hFirstList,
+                  hSecondList
+                ] using hFirstSecond
+              have hSecondThirdList :
+                  (prereleasePrecedence
+                    (secondHead :: secondTail)
+                    (thirdHead :: thirdTail)).isLE := by
+                simpa [
+                  ordering,
+                  releasePrecedence,
+                  hSecondList,
+                  hThirdList
+                ] using hSecondThird
+              have hTrans :=
+                prereleasePrecedence_isLE_trans
+                  (firstHead :: firstTail)
+                  (secondHead :: secondTail)
+                  (thirdHead :: thirdTail)
+                  hFirstSecondList
+                  hSecondThirdList
+              simpa [
+                ordering,
+                releasePrecedence,
+                hFirstList,
+                hThirdList
+              ] using hTrans
 
 instance : Ord PrecedenceKey where
   compare := ordering
