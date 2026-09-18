@@ -11,7 +11,7 @@ SemVer version precedence: given two versions, which one has higher precedence?
 ```text
 Version
   -> precedence
-  -> Comparator
+  -> Comparator satisfaction
   -> Range
   -> contains
   -> intersects / subset / equivalence
@@ -32,9 +32,11 @@ The first milestone models:
 - SemVer precedence;
 - examples from the SemVer precedence rules.
 
-Version ranges such as `^1.2.3`, `~1.2`, wildcards, unions, and pre-release
-range admission remain intentionally out of scope until version parsing and
-precedence are small and clear.
+Primitive comparator satisfaction (`< <= > >= =`) is now part of the kernel.
+
+Version-range composition such as comparator sets, `||`, `^1.2.3`, `~1.2`,
+wildcards, and npm's pre-release range admission remain intentionally out of
+scope until the primitive comparator layer is small and clear.
 
 ## Design rule
 
