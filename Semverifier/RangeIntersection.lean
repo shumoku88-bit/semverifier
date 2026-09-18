@@ -436,6 +436,113 @@ private theorem stableFloorCandidate_eq_minimum_or_mem_boundary
         cases operator <;>
           simp [stableFloorCandidate, boundaryCandidates, hPrerelease]
 
+/--
+Strongest canonical stable floor contributed by a finite comparator list.
+-/
+private def stableFloorMaximum : List Comparator → Version
+  | [] => minimumStable
+  | comparator :: rest =>
+      stableCoreMax
+        (stableFloorCandidate comparator)
+        (stableFloorMaximum rest)
+
+private theorem stableFloorMaximum_is_stable
+    (comparators : List Comparator) :
+    (stableFloorMaximum comparators).prerelease.isEmpty = true := by
+  induction comparators with
+  | nil =>
+      simp [stableFloorMaximum, minimumStable]
+  | cons comparator rest ih =>
+      simp only [stableFloorMaximum]
+      exact
+        stableCoreMax_is_stable
+          (stableFloorCandidate comparator)
+          (stableFloorMaximum rest)
+          (stableFloorCandidate_is_stable comparator)
+          ih
+
+private theorem stableFloorCandidate_core_le_maximum_of_mem
+    (comparators : List Comparator)
+    (comparator : Comparator)
+    (hComparator : comparator ∈ comparators) :
+    stableCoreLE
+      (stableFloorCandidate comparator)
+      (stableFloorMaximum comparators) := by
+  induction comparators with
+  | nil =>
+      simp at hComparator
+  | cons head tail ih =>
+      rcases List.mem_cons.mp hComparator with hEq | hTail
+      · subst comparator
+        simp only [stableFloorMaximum]
+        exact
+          stableCoreLE_left_max
+            (stableFloorCandidate head)
+            (stableFloorMaximum tail)
+      · have hToTail :=
+          ih hTail
+        have hTailToMaximum :=
+          stableCoreLE_right_max
+            (stableFloorCandidate head)
+            (stableFloorMaximum tail)
+        exact
+          stableCoreLE_trans
+            (stableFloorCandidate comparator)
+            (stableFloorMaximum tail)
+            (stableFloorMaximum (head :: tail))
+            hToTail
+            hTailToMaximum
+
+private theorem stableFloorMaximum_core_le
+    (comparators : List Comparator)
+    (upper : Version)
+    (hFloors :
+      ∀ comparator ∈ comparators,
+        stableCoreLE (stableFloorCandidate comparator) upper) :
+    stableCoreLE (stableFloorMaximum comparators) upper := by
+  induction comparators with
+  | nil =>
+      simpa [stableFloorMaximum] using
+        minimumStable_core_le upper
+  | cons head tail ih =>
+      simp only [stableFloorMaximum]
+      apply stableCoreMax_core_le
+      · exact hFloors head (List.mem_cons_self)
+      · apply ih
+        intro comparator hComparator
+        exact
+          hFloors comparator
+            (List.mem_cons_of_mem head hComparator)
+
+private theorem stableFloorMaximum_eq_minimum_or_exists_floor
+    (comparators : List Comparator) :
+    stableFloorMaximum comparators = minimumStable ∨
+      ∃ comparator,
+        comparator ∈ comparators ∧
+        stableFloorMaximum comparators =
+          stableFloorCandidate comparator := by
+  induction comparators with
+  | nil =>
+      exact Or.inl rfl
+  | cons head tail ih =>
+      simp only [stableFloorMaximum]
+      rcases
+          stableCoreMax_eq_left_or_right
+            (stableFloorCandidate head)
+            (stableFloorMaximum tail) with
+        hHead | hTailMaximum
+      · exact
+          Or.inr
+            ⟨head, List.mem_cons_self, hHead⟩
+      · rw [hTailMaximum]
+        rcases ih with hMinimum | ⟨comparator, hComparator, hEqual⟩
+        · exact Or.inl hMinimum
+        · exact
+            Or.inr
+              ⟨comparator,
+                List.mem_cons_of_mem head hComparator,
+                hEqual⟩
+
 private def comparatorSetCandidates (set : ComparatorSet) : List Version :=
   set.comparators.flatMap boundaryCandidates
 
@@ -445,6 +552,71 @@ Critical-boundary pool for one pair of conjunctive comparator sets.
 def comparatorSetIntersectionCandidates
     (left right : ComparatorSet) : List Version :=
   minimumStable :: (comparatorSetCandidates left ++ comparatorSetCandidates right)
+
+private theorem stableFloorMaximum_mem_pair_candidates
+    (left right : ComparatorSet) :
+    stableFloorMaximum (left.comparators ++ right.comparators) ∈
+      comparatorSetIntersectionCandidates left right := by
+  rcases
+      stableFloorMaximum_eq_minimum_or_exists_floor
+        (left.comparators ++ right.comparators) with
+    hMinimum | ⟨comparator, hComparator, hMaximum⟩
+  · rw [hMinimum]
+    simp [comparatorSetIntersectionCandidates]
+  · rcases List.mem_append.mp hComparator with hLeft | hRight
+    · rcases
+          stableFloorCandidate_eq_minimum_or_mem_boundary comparator with
+        hFloorMinimum | hBoundary
+      · rw [hMaximum, hFloorMinimum]
+        simp [comparatorSetIntersectionCandidates]
+      · have hInLeft :
+            stableFloorCandidate comparator ∈
+              comparatorSetCandidates left := by
+          simp only [comparatorSetCandidates, List.mem_flatMap]
+          exact ⟨comparator, hLeft, hBoundary⟩
+        rw [hMaximum]
+        simp [comparatorSetIntersectionCandidates, hInLeft]
+    · rcases
+          stableFloorCandidate_eq_minimum_or_mem_boundary comparator with
+        hFloorMinimum | hBoundary
+      · rw [hMaximum, hFloorMinimum]
+        simp [comparatorSetIntersectionCandidates]
+      · have hInRight :
+            stableFloorCandidate comparator ∈
+              comparatorSetCandidates right := by
+          simp only [comparatorSetCandidates, List.mem_flatMap]
+          exact ⟨comparator, hRight, hBoundary⟩
+        rw [hMaximum]
+        simp [comparatorSetIntersectionCandidates, hInRight]
+
+private theorem stableFloorMaximum_pair_is_stable
+    (left right : ComparatorSet) :
+    (stableFloorMaximum
+      (left.comparators ++ right.comparators)).prerelease.isEmpty = true := by
+  exact
+    stableFloorMaximum_is_stable
+      (left.comparators ++ right.comparators)
+
+private theorem stableFloorMaximum_pair_core_le_of_satisfies
+    (left right : ComparatorSet)
+    (witness : Version)
+    (hLeft : left.satisfies witness = true)
+    (hRight : right.satisfies witness = true) :
+    stableCoreLE
+      (stableFloorMaximum (left.comparators ++ right.comparators))
+      witness := by
+  apply
+    stableFloorMaximum_core_le
+      (left.comparators ++ right.comparators)
+      witness
+  intro comparator hComparator
+  rcases List.mem_append.mp hComparator with hInLeft | hInRight
+  · exact
+      stableFloorCandidate_core_le_of_set_satisfies
+        left witness hLeft comparator hInLeft
+  · exact
+      stableFloorCandidate_core_le_of_set_satisfies
+        right witness hRight comparator hInRight
 
 /--
 The local completeness obligation for one pair of comparator sets.
