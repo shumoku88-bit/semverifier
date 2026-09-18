@@ -1,4 +1,4 @@
-import Semverifier.ComparatorSet
+import Semverifier.Caret
 
 namespace Semverifier
 
@@ -14,18 +14,33 @@ deriving Repr, BEq, DecidableEq
 
 namespace Range
 
+private def branchTokens (raw : String) : List String :=
+  raw.split Char.isWhitespace
+    |>.toStringList
+    |>.filter (fun token => !token.isEmpty)
+
+private def parseTerm? (raw : String) : Option (List Comparator) :=
+  if raw.startsWith "^" then
+    (Caret.parse? raw).map (fun set => set.comparators)
+  else
+    (Comparator.parse? raw).map (fun comparator => [comparator])
+
+private def parseBranch? (raw : String) : Option ComparatorSet := do
+  let chunks ← (branchTokens raw).mapM parseTerm?
+  some { comparators := chunks.foldr (· ++ ·) [] }
+
 /--
 Parse a range as `||`-separated comparator sets.
 
-This parser intentionally supports only union at this layer. Each branch is
-delegated to `ComparatorSet.parse?`, so advanced range sugar remains outside
-the current boundary.
+Each branch accepts primitive comparators plus the advanced frontends that have
+already been defined. Full-version caret syntax is currently the only advanced
+frontend.
 
 Empty branches are admitted because node-semver's empty range branch behaves as
 "any stable version" under default prerelease semantics.
 -/
 def parse? (raw : String) : Option Range := do
-  let sets ← (raw.split "||" |>.toStringList).mapM ComparatorSet.parse?
+  let sets ← (raw.split "||" |>.toStringList).mapM parseBranch?
   some { sets }
 
 /-- Decide whether a version satisfies at least one comparator set. -/

@@ -1,4 +1,4 @@
-import Semverifier.Range
+import Semverifier.ComparatorSet
 
 namespace Semverifier
 
