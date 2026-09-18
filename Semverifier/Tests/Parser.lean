@@ -8,67 +8,67 @@ private def parsed (raw : String) : Version :=
 example :
     Version.parse? "1.2.3" =
       some { major := 1, minor := 2, patch := 3 } := by
-  decide
+  native_decide
 
 example : (Version.parse? "1.0.0-alpha").isSome = true := by
-  decide
+  native_decide
 
 example : (Version.parse? "1.0.0-alpha.1").isSome = true := by
-  decide
+  native_decide
 
 example : (Version.parse? "1.0.0-alpha-beta").isSome = true := by
-  decide
+  native_decide
 
 example : (Version.parse? "1.0.0-x-y-z.--").isSome = true := by
-  decide
+  native_decide
 
 example : (Version.parse? "1.0.0+001").isSome = true := by
-  decide
+  native_decide
 
 example : (Version.parse? "1.0.0-alpha+001").isSome = true := by
-  decide
+  native_decide
 
 example : Version.parse? "01.0.0" = none := by
-  decide
+  native_decide
 
 example : Version.parse? "1.01.0" = none := by
-  decide
+  native_decide
 
 example : Version.parse? "1.0.01" = none := by
-  decide
+  native_decide
 
 example : Version.parse? "1.0" = none := by
-  decide
+  native_decide
 
 example : Version.parse? "1.0.0-" = none := by
-  decide
+  native_decide
 
 example : Version.parse? "1.0.0-alpha..1" = none := by
-  decide
+  native_decide
 
 example : Version.parse? "1.0.0-01" = none := by
-  decide
+  native_decide
 
 example : Version.parse? "1.0.0-alpha_1" = none := by
-  decide
+  native_decide
 
 example : Version.parse? "1.0.0+build..7" = none := by
-  decide
+  native_decide
 
 example : Version.parse? "1.0.0+build+again" = none := by
-  decide
+  native_decide
 
 example : Version.parse? "1.0.0-é" = none := by
-  decide
+  native_decide
 
 example :
     Version.precedence
       (parsed "1.0.0-alpha")
       (parsed "1.0.0") = .lt := by
-  decide
+  native_decide
 
 example :
     Version.precedence
       (parsed "1.0.0+left")
       (parsed "1.0.0+right") = .eq := by
-  decide
+  native_decide
