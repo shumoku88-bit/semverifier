@@ -1,3 +1,4 @@
+import Lean.Elab.Tactic.Omega
 import Semverifier.RangeAlgebra
 
 namespace Semverifier
@@ -20,6 +21,40 @@ private def nextStablePatch (version : Version) : Version :=
     minor := version.minor
     patch := version.patch + 1
   }
+
+/--
+Lexicographic order on the stable major/minor/patch core.
+
+Prerelease and build metadata are deliberately absent. This is the order used
+by the stable half of comparator-set intersection completeness.
+-/
+private def stableCoreLE (left right : Version) : Prop :=
+  left.major < right.major ∨
+    (left.major = right.major ∧
+      (left.minor < right.minor ∨
+        (left.minor = right.minor ∧ left.patch ≤ right.patch)))
+
+private theorem stableCoreLE_refl (version : Version) :
+    stableCoreLE version version := by
+  simp [stableCoreLE]
+
+private theorem stableCoreLE_trans
+    (first second third : Version)
+    (hFirstSecond : stableCoreLE first second)
+    (hSecondThird : stableCoreLE second third) :
+    stableCoreLE first third := by
+  unfold stableCoreLE at *
+  omega
+
+private theorem stableCoreLE_total (left right : Version) :
+    stableCoreLE left right ∨ stableCoreLE right left := by
+  unfold stableCoreLE
+  omega
+
+private theorem minimumStable_core_le (version : Version) :
+    stableCoreLE minimumStable version := by
+  unfold stableCoreLE minimumStable
+  omega
 
 private def prereleaseFloorAtCore (version : Version) : Version :=
   {
