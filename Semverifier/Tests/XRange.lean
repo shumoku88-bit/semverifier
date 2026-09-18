@@ -68,6 +68,102 @@ example :
     (xrange "1.2.*").satisfies (version "1.2.8") = true := by
   native_decide
 
+-- node-semver X-range boundary rewrites.
+example :
+    XRange.parse? ">1" =
+      some {
+        comparators := [
+          { operator := .gte, bound := version "2.0.0" }
+        ]
+      } := by
+  native_decide
+
+example :
+    XRange.parse? ">1.2" =
+      some {
+        comparators := [
+          { operator := .gte, bound := version "1.3.0" }
+        ]
+      } := by
+  native_decide
+
+example :
+    XRange.parse? ">=1.2" =
+      some {
+        comparators := [
+          { operator := .gte, bound := version "1.2.0" }
+        ]
+      } := by
+  native_decide
+
+example :
+    XRange.parse? "<2.x" =
+      some {
+        comparators := [
+          { operator := .lt, bound := version "2.0.0-0" }
+        ]
+      } := by
+  native_decide
+
+example :
+    XRange.parse? "<=1.2.x" =
+      some {
+        comparators := [
+          { operator := .lt, bound := version "1.3.0-0" }
+        ]
+      } := by
+  native_decide
+
+example :
+    XRange.parse? "=1.2" =
+      some {
+        comparators := [
+          { operator := .gte, bound := version "1.2.0" },
+          { operator := .lt, bound := version "1.3.0-0" }
+        ]
+      } := by
+  native_decide
+
+example :
+    (xrange ">1").satisfies (version "1.9.9") = false := by
+  native_decide
+
+example :
+    (xrange ">1").satisfies (version "2.0.0") = true := by
+  native_decide
+
+example :
+    (xrange ">1.2").satisfies (version "1.2.99") = false := by
+  native_decide
+
+example :
+    (xrange ">1.2").satisfies (version "1.3.0") = true := by
+  native_decide
+
+example :
+    (xrange ">=1.2").satisfies (version "1.2.0") = true := by
+  native_decide
+
+example :
+    (xrange ">=1.2").satisfies (version "1.1.99") = false := by
+  native_decide
+
+example :
+    (xrange "<2.x").satisfies (version "1.9.9") = true := by
+  native_decide
+
+example :
+    (xrange "<2.x").satisfies (version "2.0.0-alpha") = false := by
+  native_decide
+
+example :
+    (xrange "<=1.2.x").satisfies (version "1.2.99") = true := by
+  native_decide
+
+example :
+    (xrange "<=1.2.x").satisfies (version "1.3.0-alpha") = false := by
+  native_decide
+
 example : XRange.parse? "1.x.3" = none := by
   native_decide
 
@@ -77,7 +173,7 @@ example : XRange.parse? "x.2.3" = none := by
 example : XRange.parse? "1.2.3" = none := by
   native_decide
 
-example : XRange.parse? ">1" = none := by
+example : XRange.parse? ">1.2.3" = none := by
   native_decide
 
 example : XRange.parse? "01.2" = none := by
