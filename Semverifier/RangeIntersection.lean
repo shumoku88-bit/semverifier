@@ -34,6 +34,12 @@ private def stableCoreLE (left right : Version) : Prop :=
       (left.minor < right.minor ∨
         (left.minor = right.minor ∧ left.patch ≤ right.patch)))
 
+private instance stableCoreLE_decidable
+    (left right : Version) :
+    Decidable (stableCoreLE left right) := by
+  unfold stableCoreLE
+  infer_instance
+
 private theorem stableCoreLE_refl (version : Version) :
     stableCoreLE version version := by
   simp [stableCoreLE]
@@ -54,6 +60,53 @@ private theorem stableCoreLE_total (left right : Version) :
 private theorem minimumStable_core_le (version : Version) :
     stableCoreLE minimumStable version := by
   simp [stableCoreLE, minimumStable] <;> omega
+
+/--
+Binary maximum for the stable core order.
+-/
+private def stableCoreMax (left right : Version) : Version :=
+  if stableCoreLE left right then right else left
+
+private theorem stableCoreLE_left_max (left right : Version) :
+    stableCoreLE left (stableCoreMax left right) := by
+  by_cases h : stableCoreLE left right
+  · simp [stableCoreMax, h]
+  · simp [stableCoreMax, h, stableCoreLE_refl]
+
+private theorem stableCoreLE_right_max (left right : Version) :
+    stableCoreLE right (stableCoreMax left right) := by
+  by_cases h : stableCoreLE left right
+  · simp [stableCoreMax, h, stableCoreLE_refl]
+  · have hRightLeft : stableCoreLE right left := by
+      rcases stableCoreLE_total left right with hLeftRight | hRightLeft
+      · exact (h hLeftRight).elim
+      · exact hRightLeft
+    simpa [stableCoreMax, h] using hRightLeft
+
+private theorem stableCoreMax_core_le
+    (left right upper : Version)
+    (hLeft : stableCoreLE left upper)
+    (hRight : stableCoreLE right upper) :
+    stableCoreLE (stableCoreMax left right) upper := by
+  by_cases h : stableCoreLE left right
+  · simpa [stableCoreMax, h] using hRight
+  · simpa [stableCoreMax, h] using hLeft
+
+private theorem stableCoreMax_eq_left_or_right
+    (left right : Version) :
+    stableCoreMax left right = left ∨ stableCoreMax left right = right := by
+  by_cases h : stableCoreLE left right
+  · exact Or.inr (by simp [stableCoreMax, h])
+  · exact Or.inl (by simp [stableCoreMax, h])
+
+private theorem stableCoreMax_is_stable
+    (left right : Version)
+    (hLeft : left.prerelease.isEmpty = true)
+    (hRight : right.prerelease.isEmpty = true) :
+    (stableCoreMax left right).prerelease.isEmpty = true := by
+  rcases stableCoreMax_eq_left_or_right left right with hMax | hMax
+  · simpa [hMax] using hLeft
+  · simpa [hMax] using hRight
 
 private def prereleaseFloorAtCore (version : Version) : Version :=
   {
@@ -330,6 +383,25 @@ private theorem stableFloorCandidate_core_le_of_satisfies
               simpa [stableFloorCandidate, hBoundStable] using
                 nextStablePatch_core_le_of_precedence_gt_of_stable_bound
                   bound candidate hBoundStable hGt
+
+/--
+If a comparator set accepts a candidate, every comparator floor in that set is
+at or below the candidate's core.
+-/
+private theorem stableFloorCandidate_core_le_of_set_satisfies
+    (set : ComparatorSet)
+    (candidate : Version)
+    (hSet : set.satisfies candidate = true)
+    (comparator : Comparator)
+    (hComparator : comparator ∈ set.comparators) :
+    stableCoreLE (stableFloorCandidate comparator) candidate := by
+  have hPrimitive :
+      comparator.satisfies candidate = true :=
+    ((ComparatorSet.satisfies_eq_true_iff set candidate).mp hSet).1
+      comparator hComparator
+  exact
+    stableFloorCandidate_core_le_of_satisfies
+      comparator candidate hPrimitive
 
 /--
 The canonical stable floor never carries prerelease identifiers.
