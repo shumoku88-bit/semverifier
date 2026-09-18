@@ -845,6 +845,207 @@ private theorem prereleaseLowerCandidate_eq_floor_or_mem_boundary
           · exact Or.inl (by
               simp [prereleaseLowerCandidate, hCore])
 
+private theorem ordering_isLE_of_ne_gt
+    (order : Ordering)
+    (hOrder : order ≠ .gt) :
+    order.isLE := by
+  cases h : order <;> simp_all
+
+/--
+A prerelease lower candidate never lies above a prerelease witness that
+satisfies its source comparator.
+-/
+private theorem prereleaseLowerCandidate_isLE_of_satisfies
+    (comparator : Comparator)
+    (witness : Version)
+    (hWitnessPrerelease : witness.prerelease.isEmpty = false)
+    (hSatisfies : comparator.satisfies witness = true) :
+    (Version.precedence
+      (prereleaseLowerCandidate comparator witness)
+      witness).isLE := by
+  cases comparator with
+  | mk operator bound =>
+      cases operator with
+      | lt =>
+          apply ordering_isLE_of_ne_gt
+          simpa [prereleaseLowerCandidate] using
+            prereleaseFloorAtCore_precedence_ne_gt
+              witness hWitnessPrerelease
+      | lte =>
+          apply ordering_isLE_of_ne_gt
+          simpa [prereleaseLowerCandidate] using
+            prereleaseFloorAtCore_precedence_ne_gt
+              witness hWitnessPrerelease
+      | gt =>
+          by_cases hCore : samePrereleaseCoreAs bound witness
+          · rcases hCore with
+              ⟨hBoundPrerelease, hMajor, hMinor, hPatch⟩
+            have hGt :
+                Version.precedence witness bound = .gt := by
+              cases hPrecedence :
+                  Version.precedence witness bound with
+              | lt =>
+                  simp [Comparator.satisfies, hPrecedence] at hSatisfies
+              | eq =>
+                  simp [Comparator.satisfies, hPrecedence] at hSatisfies
+              | gt =>
+                  rfl
+            have hGtKey :
+                PrecedenceKey.ordering
+                    {
+                      major := bound.major
+                      minor := bound.minor
+                      patch := bound.patch
+                      prerelease := witness.prerelease
+                    }
+                    {
+                      major := bound.major
+                      minor := bound.minor
+                      patch := bound.patch
+                      prerelease := bound.prerelease
+                    } = .gt := by
+              simpa [
+                Version.precedence,
+                Version.precedenceKey,
+                hMajor.symm,
+                hMinor.symm,
+                hPatch.symm
+              ] using hGt
+            have hNotGtKey :=
+              PrecedenceKey.ordering_prerelease_append_zero_ne_gt_of_gt
+                bound.major
+                bound.minor
+                bound.patch
+                bound.prerelease
+                witness.prerelease
+                hBoundPrerelease
+                hWitnessPrerelease
+                hGtKey
+            have hNotGt :
+                Version.precedence
+                    (prereleaseSuccessor bound)
+                    witness ≠ .gt := by
+              simpa [
+                Version.precedence,
+                Version.precedenceKey,
+                prereleaseSuccessor,
+                strippedBound,
+                hMajor.symm,
+                hMinor.symm,
+                hPatch.symm
+              ] using hNotGtKey
+            have hCore' :
+                samePrereleaseCoreAs bound witness :=
+              ⟨hBoundPrerelease, hMajor, hMinor, hPatch⟩
+            apply ordering_isLE_of_ne_gt
+            simpa [prereleaseLowerCandidate, hCore'] using hNotGt
+          · apply ordering_isLE_of_ne_gt
+            simpa [prereleaseLowerCandidate, hCore] using
+              prereleaseFloorAtCore_precedence_ne_gt
+                witness hWitnessPrerelease
+      | gte =>
+          by_cases hCore : samePrereleaseCoreAs bound witness
+          · rcases hCore with
+              ⟨hBoundPrerelease, hMajor, hMinor, hPatch⟩
+            have hSwap :=
+              Version.precedence_prerelease_swap_of_same_core
+                witness bound
+                hWitnessPrerelease hBoundPrerelease
+                hMajor.symm hMinor.symm hPatch.symm
+            cases hPrecedence :
+                Version.precedence witness bound with
+            | lt =>
+                simp [Comparator.satisfies, hPrecedence] at hSatisfies
+            | eq =>
+                have hReverse :
+                    Version.precedence bound witness = .eq := by
+                  cases hReverse :
+                      Version.precedence bound witness <;>
+                    simp [hPrecedence, hReverse] at hSwap ⊢
+                have hCore' :
+                    samePrereleaseCoreAs bound witness :=
+                  ⟨hBoundPrerelease, hMajor, hMinor, hPatch⟩
+                have hCandidate :
+                    prereleaseLowerCandidate
+                        { operator := .gte, bound := bound }
+                        witness =
+                      strippedBound bound := by
+                  simp [prereleaseLowerCandidate, hCore']
+                have hStripped :
+                    Version.precedence (strippedBound bound) witness =
+                      Version.precedence bound witness := by
+                  rfl
+                rw [hCandidate, hStripped, hReverse]
+                rfl
+            | gt =>
+                have hReverse :
+                    Version.precedence bound witness = .lt := by
+                  cases hReverse :
+                      Version.precedence bound witness <;>
+                    simp [hPrecedence, hReverse] at hSwap ⊢
+                have hCore' :
+                    samePrereleaseCoreAs bound witness :=
+                  ⟨hBoundPrerelease, hMajor, hMinor, hPatch⟩
+                have hCandidate :
+                    prereleaseLowerCandidate
+                        { operator := .gte, bound := bound }
+                        witness =
+                      strippedBound bound := by
+                  simp [prereleaseLowerCandidate, hCore']
+                have hStripped :
+                    Version.precedence (strippedBound bound) witness =
+                      Version.precedence bound witness := by
+                  rfl
+                rw [hCandidate, hStripped, hReverse]
+                rfl
+          · apply ordering_isLE_of_ne_gt
+            simpa [prereleaseLowerCandidate, hCore] using
+              prereleaseFloorAtCore_precedence_ne_gt
+                witness hWitnessPrerelease
+      | eq =>
+          by_cases hCore : samePrereleaseCoreAs bound witness
+          · rcases hCore with
+              ⟨hBoundPrerelease, hMajor, hMinor, hPatch⟩
+            have hEq :
+                Version.precedence witness bound = .eq := by
+              cases hPrecedence :
+                  Version.precedence witness bound with
+              | lt =>
+                  simp [Comparator.satisfies, hPrecedence] at hSatisfies
+              | eq =>
+                  rfl
+              | gt =>
+                  simp [Comparator.satisfies, hPrecedence] at hSatisfies
+            have hSwap :=
+              Version.precedence_prerelease_swap_of_same_core
+                witness bound
+                hWitnessPrerelease hBoundPrerelease
+                hMajor.symm hMinor.symm hPatch.symm
+            have hReverse :
+                Version.precedence bound witness = .eq := by
+              cases hReverse :
+                  Version.precedence bound witness <;>
+                simp [hEq, hReverse] at hSwap ⊢
+            have hCore' :
+                samePrereleaseCoreAs bound witness :=
+              ⟨hBoundPrerelease, hMajor, hMinor, hPatch⟩
+            have hCandidate :
+                prereleaseLowerCandidate
+                    { operator := .eq, bound := bound }
+                    witness =
+                  strippedBound bound := by
+              simp [prereleaseLowerCandidate, hCore']
+            have hStripped :
+                Version.precedence (strippedBound bound) witness =
+                  Version.precedence bound witness := by
+              rfl
+            rw [hCandidate, hStripped, hReverse]
+            rfl
+          · apply ordering_isLE_of_ne_gt
+            simpa [prereleaseLowerCandidate, hCore] using
+              prereleaseFloorAtCore_precedence_ne_gt
+                witness hWitnessPrerelease
+
 /--
 One canonical stable lower-bound candidate contributed by a comparator.
 
