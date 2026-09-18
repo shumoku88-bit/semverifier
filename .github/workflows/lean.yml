@@ -42,6 +42,8 @@ jobs:
           lake env lean Semverifier/Tests/RangeTilde.lean
           lake env lean Semverifier/Tests/XRange.lean
           lake env lean Semverifier/Tests/RangeXRange.lean
+          lake env lean Semverifier/Tests/HyphenRange.lean
+          lake env lean Semverifier/Tests/RangeHyphenRange.lean
 
       - name: Install node-semver reference
         run: npm install --no-save --ignore-scripts semver@7.8.5
