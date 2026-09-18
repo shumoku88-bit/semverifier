@@ -101,6 +101,47 @@ for `intersectionCandidates`.
 def findIntersectionWitness? (left right : Range) : Option Version :=
   firstOverlap? left right (intersectionCandidates left right)
 
+/--
+The one remaining mathematical obligation for global completeness of the finite
+intersection search.
+
+It says that whenever the semantic ranges intersect, at least one generated
+critical-boundary candidate is itself a concrete overlap witness.
+-/
+def IntersectionCandidatesComplete (left right : Range) : Prop :=
+  Intersects left right →
+    ∃ candidate,
+      candidate ∈ intersectionCandidates left right ∧
+      overlapsAt left right candidate = true
+
+private theorem firstOverlap?_exists_some_of_mem_overlap
+    (left right : Range)
+    (candidates : List Version)
+    (h :
+      ∃ candidate,
+        candidate ∈ candidates ∧
+        overlapsAt left right candidate = true) :
+    ∃ candidate, firstOverlap? left right candidates = some candidate := by
+  induction candidates with
+  | nil =>
+      simp at h
+  | cons head tail ih =>
+      cases hHead : overlapsAt left right head with
+      | false =>
+          have hTail :
+              ∃ candidate,
+                candidate ∈ tail ∧
+                overlapsAt left right candidate = true := by
+            rcases h with ⟨candidate, hMem, hOverlap⟩
+            rcases List.mem_cons.mp hMem with hEq | hMemTail
+            · subst candidate
+              simp [hHead] at hOverlap
+            · exact ⟨candidate, hMemTail, hOverlap⟩
+          rcases ih hTail with ⟨candidate, hFound⟩
+          exact ⟨candidate, by simp [firstOverlap?, hHead, hFound]⟩
+      | true =>
+          exact ⟨head, by simp [firstOverlap?, hHead]⟩
+
 private theorem firstOverlap?_sound
     (left right : Range)
     (candidates : List Version)
@@ -144,6 +185,50 @@ theorem findIntersectionWitness?_sound
   have hBoth :=
     (overlapsAt_eq_true_iff left right candidate).mp hOverlap
   exact ⟨candidate, hBoth.1, hBoth.2⟩
+
+/--
+Once the critical-boundary candidate pool is complete, the existing finite
+search is complete as an algorithm: every semantic intersection produces a
+returned witness.
+-/
+theorem findIntersectionWitness?_complete
+    (left right : Range)
+    (hCandidates : IntersectionCandidatesComplete left right)
+    (hIntersects : Intersects left right) :
+    ∃ candidate, findIntersectionWitness? left right = some candidate := by
+  have hCandidate := hCandidates hIntersects
+  simpa [findIntersectionWitness?] using
+    firstOverlap?_exists_some_of_mem_overlap
+      left
+      right
+      (intersectionCandidates left right)
+      hCandidate
+
+/--
+Under the candidate-completeness obligation, returning `none` is equivalent to
+semantic disjointness.
+-/
+theorem findIntersectionWitness?_none_iff_not_intersects
+    (left right : Range)
+    (hCandidates : IntersectionCandidatesComplete left right) :
+    findIntersectionWitness? left right = none ↔
+      ¬ Intersects left right := by
+  constructor
+  · intro hNone hIntersects
+    rcases
+      findIntersectionWitness?_complete
+        left right hCandidates hIntersects with
+      ⟨candidate, hSome⟩
+    rw [hNone] at hSome
+    contradiction
+  · intro hNotIntersects
+    cases hSearch : findIntersectionWitness? left right with
+    | none =>
+        exact hSearch
+    | some candidate =>
+        have hIntersects :=
+          findIntersectionWitness?_sound left right candidate hSearch
+        exact (hNotIntersects hIntersects).elim
 
 end Range
 end Semverifier
