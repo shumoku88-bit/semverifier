@@ -15,6 +15,23 @@ deriving Repr, BEq, DecidableEq
 
 namespace ComparatorSet
 
+private def tokens (raw : String) : List String :=
+  raw.split Char.isWhitespace
+    |>.toStringList
+    |>.filter (fun token => !token.isEmpty)
+
+/--
+Parse one whitespace-separated comparator set.
+
+The empty string and whitespace-only input produce the empty set, matching the
+empty-range branch of node-semver's grammar. Higher-level range operators such
+as `||`, caret, tilde, wildcards, and partial versions remain outside this
+parser and are rejected by the primitive-comparator boundary.
+-/
+def parse? (raw : String) : Option ComparatorSet := do
+  let comparators ← (tokens raw).mapM Comparator.parse?
+  some { comparators }
+
 private def sameCore (left right : Version) : Bool :=
   left.major == right.major &&
     left.minor == right.minor &&
