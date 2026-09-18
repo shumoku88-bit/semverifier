@@ -792,16 +792,14 @@ private theorem samePrereleaseCoreAs_of_precedence_eq
               | cons leftHead leftTail =>
                   cases hRightList : right.prerelease with
                   | nil =>
-                      simp [
-                        Version.precedence,
-                        Version.precedenceKey,
-                        PrecedenceKey.ordering,
-                        hMajor,
-                        hMinor,
-                        hPatch,
-                        hLeftList,
-                        hRightList
-                      ] at hEq
+                      have hLt :=
+                        Version.precedence_prerelease_lt_stable_of_same_core
+                          left right
+                          hLeftPrerelease
+                          (by simp [hRightList])
+                          hMajorEq hMinorEq hPatchEq
+                      rw [hEq] at hLt
+                      contradiction
                   | cons rightHead rightTail =>
                       exact
                         ⟨by simp [hRightList],
@@ -846,18 +844,12 @@ private theorem stableCoreLT_of_prerelease_gt_of_not_same_core
               have hPatchCompare :
                   compare witness.patch bound.patch = .eq :=
                 Nat.compare_eq_eq.mpr hPatch.symm
-              have hLt :
-                  Version.precedence witness bound = .lt := by
-                simp [
-                  Version.precedence,
-                  Version.precedenceKey,
-                  PrecedenceKey.ordering,
-                  hMajorCompare,
-                  hMinorCompare,
-                  hPatchCompare,
-                  hWitnessList,
-                  hBoundList
-                ]
+              have hLt :=
+                Version.precedence_prerelease_lt_stable_of_same_core
+                  witness bound
+                  hWitnessPrerelease
+                  (by simp [hBoundList])
+                  hMajor.symm hMinor.symm hPatch.symm
               rw [hGt] at hLt
               contradiction
       | cons boundHead boundTail =>
@@ -915,16 +907,14 @@ private theorem precedence_lt_of_prerelease_le_witness_lt_bound
                   compare candidate.patch bound.patch = .eq :=
                 Nat.compare_eq_eq.mpr
                   (hCandidatePatch.trans hPatch.symm)
-              simp [
-                Version.precedence,
-                Version.precedenceKey,
-                PrecedenceKey.ordering,
-                hMajorCompare,
-                hMinorCompare,
-                hPatchCompare,
-                hCandidateList,
-                hBoundList
-              ]
+              exact
+                Version.precedence_prerelease_lt_stable_of_same_core
+                  candidate bound
+                  hCandidatePrerelease
+                  (by simp [hBoundList])
+                  (hCandidateMajor.trans hMajor.symm)
+                  (hCandidateMinor.trans hMinor.symm)
+                  (hCandidatePatch.trans hPatch.symm)
       | cons boundHead boundTail =>
           have hBoundCore : samePrereleaseCoreAs bound witness :=
             ⟨by simp [hBoundList], hMajor, hMinor, hPatch⟩
