@@ -1,4 +1,4 @@
-import Semverifier.Caret
+import Semverifier.Range
 
 /-!
 # Semverifier
