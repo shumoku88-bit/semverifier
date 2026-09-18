@@ -129,6 +129,33 @@ private def partialTildeRanges : List String :=
     "~2.x.x"
   ]
 
+private def tildeAliasRanges : List String :=
+  [
+    "~>0.0.0",
+    "~>0.0.1",
+    "~>0.2.3",
+    "~>1.0.0",
+    "~>1.2.3",
+    "~>1.2.3-beta.2",
+    "~>2.5.1",
+    "~>*",
+    "~>x",
+    "~>X",
+    "~>0",
+    "~>1",
+    "~>2",
+    "~>0.x",
+    "~>1.x",
+    "~>1.X",
+    "~>1.*",
+    "~>0.2",
+    "~>1.2",
+    "~>1.2.x",
+    "~>1.2.X",
+    "~>1.2.*",
+    "~>2.x.x"
+  ]
+
 private def hyphenRanges : List String :=
   [
     "1.2.3 - 2.3.4",
@@ -202,6 +229,7 @@ def ranges : List String :=
     partialCaretRanges ++
     tildeRanges ++
     partialTildeRanges ++
+    tildeAliasRanges ++
     hyphenRanges ++
     xRanges ++
     operatorXRanges

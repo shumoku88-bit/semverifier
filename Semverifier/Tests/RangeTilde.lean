@@ -87,8 +87,26 @@ example :
     (parsedRange "~*").satisfies (version "7.8.9-alpha") = false := by
   native_decide
 
-example : Range.parse? "~>1.2.3" = none := by
+example :
+    (parsedRange "~>1.2.3").satisfies (version "1.2.9") = true := by
   native_decide
 
-example : Range.parse? "~>1.2" = none := by
+example :
+    (parsedRange "~>1.2.3").satisfies (version "1.3.0") = false := by
+  native_decide
+
+example :
+    (parsedRange "~>1.2").satisfies (version "1.2.99") = true := by
+  native_decide
+
+example :
+    (parsedRange "~>1.2").satisfies (version "1.3.0") = false := by
+  native_decide
+
+example :
+    (parsedRange "~>1 || ^2.0").satisfies (version "1.8.0") = true := by
+  native_decide
+
+example :
+    (parsedRange "~>1 || ^2.0").satisfies (version "2.5.0") = true := by
   native_decide
