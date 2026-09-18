@@ -65,8 +65,16 @@ Partial tilde ranges reuse the canonical bare X-range boundaries. For example:
 - `~1.2` and `~1.2.x` become `>=1.2.0 <1.3.0-0`;
 - `~*` becomes the unconstrained comparator set.
 
-Partial-version caret syntax, the `~>` alias, and hyphen ranges remain
-intentionally out of scope.
+Partial caret ranges preserve the shape of the incomplete tuple before
+desugaring. This matters around zero-valued components. For example:
+
+- `^1.2` becomes `>=1.2.0 <2.0.0-0`;
+- `^0.2` becomes `>=0.2.0 <0.3.0-0`;
+- `^0.0` becomes `>=0.0.0 <0.1.0-0`;
+- `^0` becomes `>=0.0.0 <1.0.0-0`;
+- `^*` becomes the unconstrained comparator set.
+
+The `~>` alias and hyphen ranges remain intentionally out of scope.
 
 ## Design rule
 
@@ -80,7 +88,8 @@ not duplicate it as defensive convention.
 The supported subset is checked differentially against node-semver 7.8.5 in CI.
 The deterministic corpus currently includes primitive comparators, conjunction,
 union, prerelease admission, full-version caret/tilde syntax, bare
-partial/X-ranges, operator-prefixed partial/X-ranges, and partial tilde ranges.
+partial/X-ranges, operator-prefixed partial/X-ranges, partial tilde ranges, and
+partial caret ranges.
 
 A Lean executable generates a deterministic matrix of supported ranges and
 versions, evaluates every pair with Semverifier, and a small Node adapter checks
