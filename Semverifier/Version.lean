@@ -111,12 +111,15 @@ theorem ordering_prerelease_zero_ne_gt
                     hList
                   ]
           | succ value =>
+              have hCompare :
+                  compare 0 (Nat.succ value) = .lt :=
+                Nat.compare_eq_lt.mpr (Nat.zero_lt_succ value)
               simp [
                 ordering,
                 releasePrecedence,
                 prereleasePrecedence,
                 PrereleaseIdentifier.precedence,
-                hList
+                hCompare
               ]
       | text value =>
           simp [
