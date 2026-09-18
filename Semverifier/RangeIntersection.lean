@@ -90,6 +90,57 @@ def ComparatorSetPairCandidatesComplete
       left.satisfies candidate = true ∧
       right.satisfies candidate = true
 
+/--
+Stable-witness half of comparator-set-pair candidate completeness.
+
+This isolates the ordinary release-ordering problem from node-semver's
+set-local prerelease admission rule.
+-/
+def ComparatorSetPairStableCandidatesComplete
+    (left right : ComparatorSet) : Prop :=
+  (∃ candidate,
+      candidate.prerelease.isEmpty = true ∧
+      left.satisfies candidate = true ∧
+      right.satisfies candidate = true) →
+    ∃ candidate,
+      candidate ∈ comparatorSetIntersectionCandidates left right ∧
+      left.satisfies candidate = true ∧
+      right.satisfies candidate = true
+
+/--
+Prerelease-witness half of comparator-set-pair candidate completeness.
+
+Unlike the stable case, this branch must preserve the same-core prerelease
+admission carried by each comparator set.
+-/
+def ComparatorSetPairPrereleaseCandidatesComplete
+    (left right : ComparatorSet) : Prop :=
+  (∃ candidate,
+      candidate.prerelease.isEmpty = false ∧
+      left.satisfies candidate = true ∧
+      right.satisfies candidate = true) →
+    ∃ candidate,
+      candidate ∈ comparatorSetIntersectionCandidates left right ∧
+      left.satisfies candidate = true ∧
+      right.satisfies candidate = true
+
+/--
+The local completeness obligation splits exactly into stable and prerelease
+witness cases.
+-/
+theorem comparatorSetPairCandidatesComplete_of_stable_and_prerelease
+    (left right : ComparatorSet)
+    (hStable : ComparatorSetPairStableCandidatesComplete left right)
+    (hPrerelease : ComparatorSetPairPrereleaseCandidatesComplete left right) :
+    ComparatorSetPairCandidatesComplete left right := by
+  intro hWitness
+  rcases hWitness with ⟨candidate, hLeft, hRight⟩
+  cases hEmpty : candidate.prerelease.isEmpty with
+  | false =>
+      exact hPrerelease ⟨candidate, hEmpty, hLeft, hRight⟩
+  | true =>
+      exact hStable ⟨candidate, hEmpty, hLeft, hRight⟩
+
 private def rangeBoundaryCandidates (range : Range) : List Version :=
   range.sets.flatMap comparatorSetCandidates
 
