@@ -27,13 +27,14 @@ oracle that existing implementations can be checked against.
 The first milestone models:
 
 - major, minor, and patch identifiers;
-- pre-release identifiers;
+- validated pre-release identifiers;
+- complete SemVer 2.0.0 version parsing;
 - SemVer precedence;
 - examples from the SemVer precedence rules.
 
 Version ranges such as `^1.2.3`, `~1.2`, wildcards, unions, and pre-release
-range admission are intentionally out of scope until version precedence itself
-is small and clear.
+range admission remain intentionally out of scope until version parsing and
+precedence are small and clear.
 
 ## Design rule
 
