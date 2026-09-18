@@ -2990,6 +2990,17 @@ theorem comparatorSetPairCandidatesComplete_of_stable_and_prerelease
   | true =>
       exact hStable ⟨candidate, hEmpty, hLeft, hRight⟩
 
+/--
+Every comparator-set pair is complete for the generated critical-boundary pool.
+-/
+theorem comparatorSetPairCandidatesComplete
+    (left right : ComparatorSet) :
+    ComparatorSetPairCandidatesComplete left right :=
+  comparatorSetPairCandidatesComplete_of_stable_and_prerelease
+    left right
+    (comparatorSetPairStableCandidatesComplete left right)
+    (comparatorSetPairPrereleaseCandidatesComplete left right)
+
 private def rangeBoundaryCandidates (range : Range) : List Version :=
   range.sets.flatMap comparatorSetCandidates
 
@@ -3121,6 +3132,18 @@ theorem intersectionCandidatesComplete_of_comparator_set_pairs
         (Range.satisfies_eq_true_iff right candidate).mpr
           ⟨rightSet, hRightSet, hRightCandidate⟩
 
+/--
+The finite intersection candidate pool is complete for every pair of ranges.
+-/
+theorem intersectionCandidatesComplete
+    (left right : Range) :
+    IntersectionCandidatesComplete left right :=
+  intersectionCandidatesComplete_of_comparator_set_pairs
+    left right
+    (by
+      intro leftSet hLeftSet rightSet hRightSet
+      exact comparatorSetPairCandidatesComplete leftSet rightSet)
+
 private theorem firstOverlap?_exists_some_of_mem_overlap
     (left right : Range)
     (candidates : List Version)
@@ -3212,6 +3235,19 @@ theorem findIntersectionWitness?_complete
       hCandidate
 
 /--
+The verified finite search is unconditionally complete: every semantic
+intersection yields a concrete returned witness.
+-/
+theorem findIntersectionWitness?_complete_verified
+    (left right : Range)
+    (hIntersects : Intersects left right) :
+    ∃ candidate, findIntersectionWitness? left right = some candidate :=
+  findIntersectionWitness?_complete
+    left right
+    (intersectionCandidatesComplete left right)
+    hIntersects
+
+/--
 Under the candidate-completeness obligation, returning `none` is equivalent to
 semantic disjointness.
 -/
@@ -3236,6 +3272,18 @@ theorem findIntersectionWitness?_none_iff_not_intersects
         have hIntersects :=
           findIntersectionWitness?_sound left right candidate hSearch
         exact (hNotIntersects hIntersects).elim
+
+/--
+Returning `none` from the verified finite search is exactly semantic
+disjointness, with no remaining completeness assumption.
+-/
+theorem findIntersectionWitness?_none_iff_not_intersects_verified
+    (left right : Range) :
+    findIntersectionWitness? left right = none ↔
+      ¬ Intersects left right :=
+  findIntersectionWitness?_none_iff_not_intersects
+    left right
+    (intersectionCandidatesComplete left right)
 
 end Range
 end Semverifier
