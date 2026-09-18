@@ -89,6 +89,26 @@ private def tildeRanges : List String :=
     "~2.5.1"
   ]
 
+private def partialTildeRanges : List String :=
+  [
+    "~*",
+    "~x",
+    "~X",
+    "~0",
+    "~1",
+    "~2",
+    "~0.x",
+    "~1.x",
+    "~1.X",
+    "~1.*",
+    "~0.2",
+    "~1.2",
+    "~1.2.x",
+    "~1.2.X",
+    "~1.2.*",
+    "~2.x.x"
+  ]
+
 private def xRanges : List String :=
   [
     "*",
@@ -140,6 +160,7 @@ def ranges : List String :=
     unionRanges ++
     caretRanges ++
     tildeRanges ++
+    partialTildeRanges ++
     xRanges ++
     operatorXRanges
 
