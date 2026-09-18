@@ -25,5 +25,7 @@ jobs:
           use-github-cache: true
       - name: Build semantic kernel
         run: lake build
-      - name: Check precedence examples
-        run: lake env lean Semverifier/Tests/Version.lean
+      - name: Check semantic examples
+        run: |
+          lake env lean Semverifier/Tests/Identifier.lean
+          lake env lean Semverifier/Tests/Version.lean
