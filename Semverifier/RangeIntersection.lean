@@ -449,6 +449,143 @@ private def prereleaseSuccessor (version : Version) : Version :=
   }
 
 /--
+A prerelease version lies on the same major/minor/patch core as a reference.
+-/
+private def samePrereleaseCoreAs
+    (candidate reference : Version) : Prop :=
+  candidate.prerelease.isEmpty = false ∧
+    candidate.major = reference.major ∧
+    candidate.minor = reference.minor ∧
+    candidate.patch = reference.patch
+
+/--
+Maximum of two prerelease versions intended to lie on one fixed core.
+
+The function deliberately returns one of its inputs so finite folds remain
+inside the existing generated candidate pool.
+-/
+private def prereleaseCoreMax (left right : Version) : Version :=
+  match Version.precedence left right with
+  | .gt => left
+  | .lt | .eq => right
+
+private theorem prereleaseCoreMax_eq_left_or_right
+    (left right : Version) :
+    prereleaseCoreMax left right = left ∨
+      prereleaseCoreMax left right = right := by
+  cases hPrecedence : Version.precedence left right <;>
+    simp [prereleaseCoreMax, hPrecedence]
+
+private theorem prereleaseCoreMax_same_core_as
+    (left right reference : Version)
+    (hLeft : samePrereleaseCoreAs left reference)
+    (hRight : samePrereleaseCoreAs right reference) :
+    samePrereleaseCoreAs
+      (prereleaseCoreMax left right)
+      reference := by
+  rcases prereleaseCoreMax_eq_left_or_right left right with hMax | hMax
+  · simpa [hMax] using hLeft
+  · simpa [hMax] using hRight
+
+private theorem prereleaseCoreMax_left_isLE
+    (left right reference : Version)
+    (hLeft : samePrereleaseCoreAs left reference)
+    (hRight : samePrereleaseCoreAs right reference) :
+    (Version.precedence left (prereleaseCoreMax left right)).isLE := by
+  rcases hLeft with
+    ⟨hLeftPrerelease, hLeftMajor, hLeftMinor, hLeftPatch⟩
+  rcases hRight with
+    ⟨hRightPrerelease, hRightMajor, hRightMinor, hRightPatch⟩
+  cases hPrecedence : Version.precedence left right with
+  | lt =>
+      simp [prereleaseCoreMax, hPrecedence]
+  | eq =>
+      simp [prereleaseCoreMax, hPrecedence]
+  | gt =>
+      have hSelf :=
+        Version.precedence_prerelease_self_eq
+          left hLeftPrerelease
+      simp [prereleaseCoreMax, hPrecedence, hSelf]
+
+private theorem prereleaseCoreMax_right_isLE
+    (left right reference : Version)
+    (hLeft : samePrereleaseCoreAs left reference)
+    (hRight : samePrereleaseCoreAs right reference) :
+    (Version.precedence right (prereleaseCoreMax left right)).isLE := by
+  rcases hLeft with
+    ⟨hLeftPrerelease, hLeftMajor, hLeftMinor, hLeftPatch⟩
+  rcases hRight with
+    ⟨hRightPrerelease, hRightMajor, hRightMinor, hRightPatch⟩
+  have hMajor : left.major = right.major :=
+    hLeftMajor.trans hRightMajor.symm
+  have hMinor : left.minor = right.minor :=
+    hLeftMinor.trans hRightMinor.symm
+  have hPatch : left.patch = right.patch :=
+    hLeftPatch.trans hRightPatch.symm
+  have hSwap :=
+    Version.precedence_prerelease_swap_of_same_core
+      left right
+      hLeftPrerelease hRightPrerelease
+      hMajor hMinor hPatch
+  cases hPrecedence : Version.precedence left right with
+  | lt =>
+      have hSelf :=
+        Version.precedence_prerelease_self_eq
+          right hRightPrerelease
+      simp [prereleaseCoreMax, hPrecedence, hSelf]
+  | eq =>
+      have hSelf :=
+        Version.precedence_prerelease_self_eq
+          right hRightPrerelease
+      simp [prereleaseCoreMax, hPrecedence, hSelf]
+  | gt =>
+      cases hReverse : Version.precedence right left <;>
+        simp [hPrecedence, hReverse] at hSwap ⊢
+
+private theorem prereleaseCoreMax_isLE
+    (left right upper reference : Version)
+    (hLeft : samePrereleaseCoreAs left reference)
+    (hRight : samePrereleaseCoreAs right reference)
+    (hUpper : samePrereleaseCoreAs upper reference)
+    (hLeftUpper : (Version.precedence left upper).isLE)
+    (hRightUpper : (Version.precedence right upper).isLE) :
+    (Version.precedence
+      (prereleaseCoreMax left right)
+      upper).isLE := by
+  rcases prereleaseCoreMax_eq_left_or_right left right with hMax | hMax
+  · simpa [hMax] using hLeftUpper
+  · simpa [hMax] using hRightUpper
+
+private theorem prereleaseCore_isLE_trans
+    (first second third reference : Version)
+    (hFirst : samePrereleaseCoreAs first reference)
+    (hSecond : samePrereleaseCoreAs second reference)
+    (hThird : samePrereleaseCoreAs third reference)
+    (hFirstSecond : (Version.precedence first second).isLE)
+    (hSecondThird : (Version.precedence second third).isLE) :
+    (Version.precedence first third).isLE := by
+  rcases hFirst with
+    ⟨hFirstPrerelease, hFirstMajor, hFirstMinor, hFirstPatch⟩
+  rcases hSecond with
+    ⟨hSecondPrerelease, hSecondMajor, hSecondMinor, hSecondPatch⟩
+  rcases hThird with
+    ⟨hThirdPrerelease, hThirdMajor, hThirdMinor, hThirdPatch⟩
+  exact
+    Version.precedence_prerelease_isLE_trans_of_same_core
+      first second third
+      hFirstPrerelease
+      hSecondPrerelease
+      hThirdPrerelease
+      (hFirstMajor.trans hSecondMajor.symm)
+      (hFirstMinor.trans hSecondMinor.symm)
+      (hFirstPatch.trans hSecondPatch.symm)
+      (hSecondMajor.trans hThirdMajor.symm)
+      (hSecondMinor.trans hThirdMinor.symm)
+      (hSecondPatch.trans hThirdPatch.symm)
+      hFirstSecond
+      hSecondThird
+
+/--
 Appending numeric zero preserves prerelease status for a prerelease bound.
 -/
 private theorem prereleaseSuccessor_is_prerelease
