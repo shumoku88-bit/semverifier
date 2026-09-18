@@ -1,4 +1,4 @@
-import Semverifier.ComparatorSet
+import Semverifier.XRange
 
 namespace Semverifier
 
@@ -6,6 +6,17 @@ namespace Caret
 
 private def zeroPrerelease : List PrereleaseIdentifier :=
   [.numeric 0]
+
+private def lowerVersion (major minor patch : Nat) : Version :=
+  { major, minor, patch }
+
+private def prereleaseFloor (major minor patch : Nat) : Version :=
+  {
+    major
+    minor
+    patch
+    prerelease := zeroPrerelease
+  }
 
 /--
 Upper bound for a full-version caret range.
@@ -16,26 +27,11 @@ the left-most non-zero component. The upper bound is exclusive and carries
 -/
 def upperBound (version : Version) : Version :=
   if version.major != 0 then
-    {
-      major := version.major + 1
-      minor := 0
-      patch := 0
-      prerelease := zeroPrerelease
-    }
+    prereleaseFloor (version.major + 1) 0 0
   else if version.minor != 0 then
-    {
-      major := 0
-      minor := version.minor + 1
-      patch := 0
-      prerelease := zeroPrerelease
-    }
+    prereleaseFloor 0 (version.minor + 1) 0
   else
-    {
-      major := 0
-      minor := 0
-      patch := version.patch + 1
-      prerelease := zeroPrerelease
-    }
+    prereleaseFloor 0 0 (version.patch + 1)
 
 /--
 Desugar one complete-version caret into the existing comparator-set kernel.
@@ -53,14 +49,63 @@ def desugar (version : Version) : ComparatorSet :=
   }
 
 /--
-Parse a complete-version caret expression such as `^1.2.3`.
+Desugar an incomplete caret tuple while preserving which components were
+omitted.
 
-Partial versions (`^1.2`, `^1`) intentionally remain outside this boundary.
+For partial carets, omission is semantically significant:
+
+- `^M` permits the whole major line, including `^0`;
+- `^M.m` permits the whole major line when `M != 0`;
+- `^0.m` permits the matching minor line.
+
+This matches node-semver's X-aware caret boundary rules.
+-/
+def desugarPartial : XRange.Partial → ComparatorSet
+  | .any =>
+      XRange.any
+  | .major major =>
+      {
+        comparators := [
+          { operator := .gte, bound := lowerVersion major 0 0 },
+          { operator := .lt, bound := prereleaseFloor (major + 1) 0 0 }
+        ]
+      }
+  | .minor major minor =>
+      let upper :=
+        if major == 0 then
+          prereleaseFloor 0 (minor + 1) 0
+        else
+          prereleaseFloor (major + 1) 0 0
+      {
+        comparators := [
+          { operator := .gte, bound := lowerVersion major minor 0 },
+          { operator := .lt, bound := upper }
+        ]
+      }
+
+/--
+Parse caret syntax into the existing comparator-set kernel.
+
+Complete versions retain the existing left-most-non-zero rule. Partial and
+X-range forms preserve omission information before desugaring, so boundaries
+such as `^0` and `^0.0` remain distinct.
+
+Examples:
+
+- `^1` -> `>=1.0.0 <2.0.0-0`
+- `^1.2` -> `>=1.2.0 <2.0.0-0`
+- `^0` -> `>=0.0.0 <1.0.0-0`
+- `^0.2` -> `>=0.2.0 <0.3.0-0`
+- `^0.0` -> `>=0.0.0 <0.1.0-0`
 -/
 def parse? (raw : String) : Option ComparatorSet := do
   let rest ← raw.dropPrefix? "^"
-  let version ← Version.parse? rest.toString
-  some (desugar version)
+  let body := rest.toString
+  match Version.parse? body with
+  | some version => some (desugar version)
+  | none => do
+      let shape ← XRange.parsePartial? body
+      some (desugarPartial shape)
 
 end Caret
 end Semverifier
