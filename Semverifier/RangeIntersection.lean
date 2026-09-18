@@ -490,51 +490,17 @@ private theorem prereleaseFloorAtCore_precedence_ne_gt
     (version : Version)
     (hPrerelease : version.prerelease.isEmpty = false) :
     Version.precedence (prereleaseFloorAtCore version) version ≠ .gt := by
-  cases hVersionPrerelease : version.prerelease with
-  | nil =>
-      simp [hVersionPrerelease] at hPrerelease
-  | cons head tail =>
-      cases head with
-      | numeric value =>
-          cases value with
-          | zero =>
-              cases tail with
-              | nil =>
-                  simp [
-                    Version.precedence,
-                    Version.precedenceKey,
-                    PrecedenceKey.ordering,
-                    prereleaseFloorAtCore,
-                    hVersionPrerelease,
-                    PrereleaseIdentifier.precedence
-                  ]
-              | cons next rest =>
-                  simp [
-                    Version.precedence,
-                    Version.precedenceKey,
-                    PrecedenceKey.ordering,
-                    prereleaseFloorAtCore,
-                    hVersionPrerelease,
-                    PrereleaseIdentifier.precedence
-                  ]
-          | succ value =>
-              simp [
-                Version.precedence,
-                Version.precedenceKey,
-                PrecedenceKey.ordering,
-                prereleaseFloorAtCore,
-                hVersionPrerelease,
-                PrereleaseIdentifier.precedence
-              ]
-      | text value =>
-          simp [
-            Version.precedence,
-            Version.precedenceKey,
-            PrecedenceKey.ordering,
-            prereleaseFloorAtCore,
-            hVersionPrerelease,
-            PrereleaseIdentifier.precedence
-          ]
+  simpa [
+    Version.precedence,
+    Version.precedenceKey,
+    prereleaseFloorAtCore
+  ] using
+    PrecedenceKey.ordering_prerelease_zero_ne_gt
+      version.major
+      version.minor
+      version.patch
+      version.prerelease
+      hPrerelease
 
 /--
 A prerelease comparator bound contributes the prerelease floor at its core to
