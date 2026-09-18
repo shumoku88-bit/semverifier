@@ -68,6 +68,19 @@ example :
     (xrange "1.2.*").satisfies (version "1.2.8") = true := by
   native_decide
 
+-- The canonical partial tuple shape is shared with other frontends.
+example : XRange.parsePartial? "*" = some .any := by
+  native_decide
+
+example : XRange.parsePartial? "1.x" = some (.major 1) := by
+  native_decide
+
+example : XRange.parsePartial? "1.2.x" = some (.minor 1 2) := by
+  native_decide
+
+example : XRange.parsePartial? "1.2.3" = none := by
+  native_decide
+
 -- The bare-only seam is reusable by other frontends without admitting
 -- comparator operators.
 example : XRange.parseBare? "1.2" = XRange.parse? "1.2" := by

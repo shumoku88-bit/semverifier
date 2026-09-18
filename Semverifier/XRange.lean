@@ -59,12 +59,24 @@ def any : ComparatorSet :=
 private def nullSet : ComparatorSet :=
   singleton .lt (prereleaseFloor 0 0 0)
 
-private inductive Partial where
+/--
+The canonical syntactic shapes of an incomplete SemVer tuple.
+
+This type is shared by frontends whose semantics depend on which components
+were omitted, rather than only on the zero-filled lower version.
+-/
+inductive Partial where
   | any
   | major (major : Nat)
   | minor (major minor : Nat)
+deriving Repr, BEq, DecidableEq
 
-private def parsePartial? (raw : String) : Option Partial :=
+/--
+Parse a bare partial version or X-range into its canonical tuple shape.
+
+Complete versions are intentionally excluded.
+-/
+def parsePartial? (raw : String) : Option Partial :=
   let parts := raw.split "." |>.toStringList
   match parts with
   | [majorRaw] =>
