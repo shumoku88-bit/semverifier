@@ -63,13 +63,57 @@ example :
       (version "1.2.3+other") = true := by
   native_decide
 
-example : Tilde.parse? "~1.2" = none := by
+-- Partial tilde ranges reuse the bare X-range boundary.
+example : Tilde.parse? "~1" = XRange.parseBare? "1" := by
   native_decide
 
-example : Tilde.parse? "~1" = none := by
+example : Tilde.parse? "~1.2" = XRange.parseBare? "1.2" := by
+  native_decide
+
+example : Tilde.parse? "~1.x" = XRange.parseBare? "1.x" := by
+  native_decide
+
+example : Tilde.parse? "~1.2.x" = XRange.parseBare? "1.2.x" := by
+  native_decide
+
+example : Tilde.parse? "~*" = XRange.parseBare? "*" := by
+  native_decide
+
+example :
+    (tilde "~1").satisfies (version "1.9.9") = true := by
+  native_decide
+
+example :
+    (tilde "~1").satisfies (version "2.0.0") = false := by
+  native_decide
+
+example :
+    (tilde "~1.2").satisfies (version "1.2.99") = true := by
+  native_decide
+
+example :
+    (tilde "~1.2").satisfies (version "1.3.0") = false := by
+  native_decide
+
+example :
+    (tilde "~1.2.x").satisfies (version "1.2.7") = true := by
+  native_decide
+
+example :
+    (tilde "~*").satisfies (version "9.9.9") = true := by
+  native_decide
+
+example :
+    (tilde "~*").satisfies (version "9.9.9-alpha") = false := by
   native_decide
 
 example : Tilde.parse? "~>1.2.3" = none := by
+  native_decide
+
+example : Tilde.parse? "~>1.2" = none := by
+  native_decide
+
+example : Tilde.parse? "~<1.2" = none := by
   native_decide
 
 example : Tilde.parse? "1.2.3" = none := by
