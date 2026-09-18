@@ -32,5 +32,30 @@ def parse? (raw : String) : Option Range := do
 def satisfies (range : Range) (candidate : Version) : Bool :=
   range.sets.any (fun set => set.satisfies candidate)
 
+/--
+Executable union semantics, exposed propositionally.
+
+A range satisfies a candidate exactly when some comparator set in the range
+satisfies it.
+-/
+theorem satisfies_eq_true_iff
+    (range : Range)
+    (candidate : Version) :
+    range.satisfies candidate = true ↔
+      ∃ set, set ∈ range.sets ∧ set.satisfies candidate = true := by
+  simp [satisfies]
+
+/-- Union two already-parsed semantic ranges. -/
+def union (left right : Range) : Range :=
+  { sets := left.sets ++ right.sets }
+
+/-- Range union corresponds exactly to boolean disjunction of satisfaction. -/
+theorem satisfies_union
+    (left right : Range)
+    (candidate : Version) :
+    (union left right).satisfies candidate =
+      (left.satisfies candidate || right.satisfies candidate) := by
+  simp [union, satisfies]
+
 end Range
 end Semverifier

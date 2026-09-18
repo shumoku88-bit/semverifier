@@ -57,5 +57,20 @@ def satisfies (set : ComparatorSet) (candidate : Version) : Bool :=
   set.comparators.all (fun comparator => comparator.satisfies candidate) &&
     set.prereleaseAdmitted candidate
 
+/--
+Executable conjunction semantics, exposed propositionally.
+
+A comparator set satisfies a candidate exactly when every primitive comparator
+does and the candidate passes the set-local prerelease admission rule.
+-/
+theorem satisfies_eq_true_iff
+    (set : ComparatorSet)
+    (candidate : Version) :
+    set.satisfies candidate = true ↔
+      (∀ comparator ∈ set.comparators,
+        comparator.satisfies candidate = true) ∧
+      set.prereleaseAdmitted candidate = true := by
+  simp [satisfies]
+
 end ComparatorSet
 end Semverifier
