@@ -57,6 +57,299 @@ private theorem stableCoreLE_total (left right : Version) :
   unfold stableCoreLE
   omega
 
+private def stableCoreLT (left right : Version) : Prop :=
+  left.major < right.major ∨
+    (left.major = right.major ∧
+      (left.minor < right.minor ∨
+        (left.minor = right.minor ∧ left.patch < right.patch)))
+
+private theorem stableCoreLT_of_le_of_lt
+    (first second third : Version)
+    (hFirstSecond : stableCoreLE first second)
+    (hSecondThird : stableCoreLT second third) :
+    stableCoreLT first third := by
+  unfold stableCoreLE at hFirstSecond
+  unfold stableCoreLT at hSecondThird ⊢
+  omega
+
+private theorem precedence_lt_of_stableCoreLT
+    (left right : Version)
+    (hCore : stableCoreLT left right) :
+    Version.precedence left right = .lt := by
+  unfold stableCoreLT at hCore
+  rcases hCore with hMajor | ⟨hMajorEq, hMinor⟩
+  · have hMajorCompare :
+        compare left.major right.major = .lt :=
+      Nat.compare_eq_lt.mpr hMajor
+    simp [
+      Version.precedence,
+      Version.precedenceKey,
+      PrecedenceKey.ordering,
+      hMajorCompare
+    ]
+  · rcases hMinor with hMinorLt | ⟨hMinorEq, hPatchLt⟩
+    · have hMajorCompare :
+          compare left.major right.major = .eq :=
+        Nat.compare_eq_eq.mpr hMajorEq
+      have hMinorCompare :
+          compare left.minor right.minor = .lt :=
+        Nat.compare_eq_lt.mpr hMinorLt
+      simp [
+        Version.precedence,
+        Version.precedenceKey,
+        PrecedenceKey.ordering,
+        hMajorCompare,
+        hMinorCompare
+      ]
+    · have hMajorCompare :
+          compare left.major right.major = .eq :=
+        Nat.compare_eq_eq.mpr hMajorEq
+      have hMinorCompare :
+          compare left.minor right.minor = .eq :=
+        Nat.compare_eq_eq.mpr hMinorEq
+      have hPatchCompare :
+          compare left.patch right.patch = .lt :=
+        Nat.compare_eq_lt.mpr hPatchLt
+      simp [
+        Version.precedence,
+        Version.precedenceKey,
+        PrecedenceKey.ordering,
+        hMajorCompare,
+        hMinorCompare,
+        hPatchCompare
+      ]
+
+private theorem precedence_gt_of_stableCoreLT
+    (left right : Version)
+    (hCore : stableCoreLT left right) :
+    Version.precedence right left = .gt := by
+  unfold stableCoreLT at hCore
+  rcases hCore with hMajor | ⟨hMajorEq, hMinor⟩
+  · have hMajorCompare :
+        compare right.major left.major = .gt :=
+      Nat.compare_eq_gt.mpr hMajor
+    simp [
+      Version.precedence,
+      Version.precedenceKey,
+      PrecedenceKey.ordering,
+      hMajorCompare
+    ]
+  · rcases hMinor with hMinorLt | ⟨hMinorEq, hPatchLt⟩
+    · have hMajorCompare :
+          compare right.major left.major = .eq :=
+        Nat.compare_eq_eq.mpr hMajorEq.symm
+      have hMinorCompare :
+          compare right.minor left.minor = .gt :=
+        Nat.compare_eq_gt.mpr hMinorLt
+      simp [
+        Version.precedence,
+        Version.precedenceKey,
+        PrecedenceKey.ordering,
+        hMajorCompare,
+        hMinorCompare
+      ]
+    · have hMajorCompare :
+          compare right.major left.major = .eq :=
+        Nat.compare_eq_eq.mpr hMajorEq.symm
+      have hMinorCompare :
+          compare right.minor left.minor = .eq :=
+        Nat.compare_eq_eq.mpr hMinorEq.symm
+      have hPatchCompare :
+          compare right.patch left.patch = .gt :=
+        Nat.compare_eq_gt.mpr hPatchLt
+      simp [
+        Version.precedence,
+        Version.precedenceKey,
+        PrecedenceKey.ordering,
+        hMajorCompare,
+        hMinorCompare,
+        hPatchCompare
+      ]
+
+private theorem prerelease_eq_nil_of_stable
+    (version : Version)
+    (hStable : version.prerelease.isEmpty = true) :
+    version.prerelease = [] := by
+  cases hPrerelease : version.prerelease with
+  | nil =>
+      rfl
+  | cons head tail =>
+      simp [hPrerelease] at hStable
+
+private theorem stableCoreLT_of_precedence_lt_of_stable
+    (left right : Version)
+    (hStable : left.prerelease.isEmpty = true)
+    (hPrecedence : Version.precedence left right = .lt) :
+    stableCoreLT left right := by
+  have hLeftPrerelease :=
+    prerelease_eq_nil_of_stable left hStable
+  cases hMajor : compare left.major right.major with
+  | lt =>
+      have hMajorLt : left.major < right.major :=
+        Nat.compare_eq_lt.mp hMajor
+      exact Or.inl hMajorLt
+  | gt =>
+      simp [
+        Version.precedence,
+        Version.precedenceKey,
+        PrecedenceKey.ordering,
+        hMajor
+      ] at hPrecedence
+  | eq =>
+      have hMajorEq : left.major = right.major :=
+        Nat.compare_eq_eq.mp hMajor
+      cases hMinor : compare left.minor right.minor with
+      | lt =>
+          have hMinorLt : left.minor < right.minor :=
+            Nat.compare_eq_lt.mp hMinor
+          exact Or.inr ⟨hMajorEq, Or.inl hMinorLt⟩
+      | gt =>
+          simp [
+            Version.precedence,
+            Version.precedenceKey,
+            PrecedenceKey.ordering,
+            hMajor,
+            hMinor
+          ] at hPrecedence
+      | eq =>
+          have hMinorEq : left.minor = right.minor :=
+            Nat.compare_eq_eq.mp hMinor
+          cases hPatch : compare left.patch right.patch with
+          | lt =>
+              have hPatchLt : left.patch < right.patch :=
+                Nat.compare_eq_lt.mp hPatch
+              exact
+                Or.inr
+                  ⟨hMajorEq, Or.inr ⟨hMinorEq, hPatchLt⟩⟩
+          | gt =>
+              simp [
+                Version.precedence,
+                Version.precedenceKey,
+                PrecedenceKey.ordering,
+                hMajor,
+                hMinor,
+                hPatch
+              ] at hPrecedence
+          | eq =>
+              cases hRightPrerelease : right.prerelease with
+              | nil =>
+                  have hExpected :
+                      Version.precedence left right = .eq := by
+                    simp only [
+                      Version.precedence,
+                      Version.precedenceKey,
+                      PrecedenceKey.ordering
+                    ]
+                    rw [hMajor, hMinor, hPatch]
+                    rw [hLeftPrerelease, hRightPrerelease]
+                    rfl
+                  rw [hExpected] at hPrecedence
+                  contradiction
+              | cons head tail =>
+                  have hExpected :
+                      Version.precedence left right = .gt := by
+                    simp only [
+                      Version.precedence,
+                      Version.precedenceKey,
+                      PrecedenceKey.ordering
+                    ]
+                    rw [hMajor, hMinor, hPatch]
+                    rw [hLeftPrerelease, hRightPrerelease]
+                    rfl
+                  rw [hExpected] at hPrecedence
+                  contradiction
+
+private theorem stable_bound_and_same_core_of_precedence_eq
+    (candidate bound : Version)
+    (hCandidateStable : candidate.prerelease.isEmpty = true)
+    (hPrecedence : Version.precedence candidate bound = .eq) :
+    bound.prerelease.isEmpty = true ∧
+      candidate.major = bound.major ∧
+      candidate.minor = bound.minor ∧
+      candidate.patch = bound.patch := by
+  have hCandidatePrerelease :=
+    prerelease_eq_nil_of_stable candidate hCandidateStable
+  cases hMajor : compare candidate.major bound.major with
+  | lt =>
+      simp [
+        Version.precedence,
+        Version.precedenceKey,
+        PrecedenceKey.ordering,
+        hMajor
+      ] at hPrecedence
+  | gt =>
+      simp [
+        Version.precedence,
+        Version.precedenceKey,
+        PrecedenceKey.ordering,
+        hMajor
+      ] at hPrecedence
+  | eq =>
+      have hMajorEq : candidate.major = bound.major :=
+        Nat.compare_eq_eq.mp hMajor
+      cases hMinor : compare candidate.minor bound.minor with
+      | lt =>
+          simp [
+            Version.precedence,
+            Version.precedenceKey,
+            PrecedenceKey.ordering,
+            hMajor,
+            hMinor
+          ] at hPrecedence
+      | gt =>
+          simp [
+            Version.precedence,
+            Version.precedenceKey,
+            PrecedenceKey.ordering,
+            hMajor,
+            hMinor
+          ] at hPrecedence
+      | eq =>
+          have hMinorEq : candidate.minor = bound.minor :=
+            Nat.compare_eq_eq.mp hMinor
+          cases hPatch : compare candidate.patch bound.patch with
+          | lt =>
+              simp [
+                Version.precedence,
+                Version.precedenceKey,
+                PrecedenceKey.ordering,
+                hMajor,
+                hMinor,
+                hPatch
+              ] at hPrecedence
+          | gt =>
+              simp [
+                Version.precedence,
+                Version.precedenceKey,
+                PrecedenceKey.ordering,
+                hMajor,
+                hMinor,
+                hPatch
+              ] at hPrecedence
+          | eq =>
+              have hPatchEq : candidate.patch = bound.patch :=
+                Nat.compare_eq_eq.mp hPatch
+              cases hBoundPrerelease : bound.prerelease with
+              | nil =>
+                  exact
+                    ⟨by simp [hBoundPrerelease],
+                      hMajorEq,
+                      hMinorEq,
+                      hPatchEq⟩
+              | cons head tail =>
+                  have hExpected :
+                      Version.precedence candidate bound = .gt := by
+                    simp only [
+                      Version.precedence,
+                      Version.precedenceKey,
+                      PrecedenceKey.ordering
+                    ]
+                    rw [hMajor, hMinor, hPatch]
+                    rw [hCandidatePrerelease, hBoundPrerelease]
+                    rfl
+                  rw [hExpected] at hPrecedence
+                  contradiction
+
 private theorem minimumStable_core_le (version : Version) :
     stableCoreLE minimumStable version := by
   simp [stableCoreLE, minimumStable] <;> omega
