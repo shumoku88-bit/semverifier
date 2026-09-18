@@ -53,8 +53,7 @@ private theorem stableCoreLE_total (left right : Version) :
 
 private theorem minimumStable_core_le (version : Version) :
     stableCoreLE minimumStable version := by
-  unfold stableCoreLE minimumStable
-  omega
+  simp [stableCoreLE, minimumStable] <;> omega
 
 private def prereleaseFloorAtCore (version : Version) : Version :=
   {
