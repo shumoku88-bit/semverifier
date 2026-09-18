@@ -721,6 +721,212 @@ private theorem prereleaseCore_lt_of_lt_of_isLE
           simp [hFirstSecond, hReverse] at hSwapFirstSecond ⊢
       simp [hSecondFirst] at hSecondThirdFirst
 
+private theorem samePrereleaseCoreAs_of_precedence_eq
+    (left right : Version)
+    (hLeftPrerelease : left.prerelease.isEmpty = false)
+    (hEq : Version.precedence left right = .eq) :
+    samePrereleaseCoreAs right left := by
+  cases hMajor : compare left.major right.major with
+  | lt =>
+      simp [
+        Version.precedence,
+        Version.precedenceKey,
+        PrecedenceKey.ordering,
+        hMajor
+      ] at hEq
+  | gt =>
+      simp [
+        Version.precedence,
+        Version.precedenceKey,
+        PrecedenceKey.ordering,
+        hMajor
+      ] at hEq
+  | eq =>
+      have hMajorEq : left.major = right.major :=
+        Nat.compare_eq_eq.mp hMajor
+      cases hMinor : compare left.minor right.minor with
+      | lt =>
+          simp [
+            Version.precedence,
+            Version.precedenceKey,
+            PrecedenceKey.ordering,
+            hMajor,
+            hMinor
+          ] at hEq
+      | gt =>
+          simp [
+            Version.precedence,
+            Version.precedenceKey,
+            PrecedenceKey.ordering,
+            hMajor,
+            hMinor
+          ] at hEq
+      | eq =>
+          have hMinorEq : left.minor = right.minor :=
+            Nat.compare_eq_eq.mp hMinor
+          cases hPatch : compare left.patch right.patch with
+          | lt =>
+              simp [
+                Version.precedence,
+                Version.precedenceKey,
+                PrecedenceKey.ordering,
+                hMajor,
+                hMinor,
+                hPatch
+              ] at hEq
+          | gt =>
+              simp [
+                Version.precedence,
+                Version.precedenceKey,
+                PrecedenceKey.ordering,
+                hMajor,
+                hMinor,
+                hPatch
+              ] at hEq
+          | eq =>
+              have hPatchEq : left.patch = right.patch :=
+                Nat.compare_eq_eq.mp hPatch
+              cases hLeftList : left.prerelease with
+              | nil =>
+                  simp [hLeftList] at hLeftPrerelease
+              | cons leftHead leftTail =>
+                  cases hRightList : right.prerelease with
+                  | nil =>
+                      have hLt :=
+                        Version.precedence_prerelease_lt_stable_of_same_core
+                          left right
+                          hLeftPrerelease
+                          (by simp [hRightList])
+                          hMajorEq hMinorEq hPatchEq
+                      rw [hEq] at hLt
+                      contradiction
+                  | cons rightHead rightTail =>
+                      exact
+                        ⟨by simp [hRightList],
+                          hMajorEq.symm,
+                          hMinorEq.symm,
+                          hPatchEq.symm⟩
+
+private theorem stableCoreLT_of_prerelease_gt_of_not_same_core
+    (witness bound : Version)
+    (hWitnessPrerelease : witness.prerelease.isEmpty = false)
+    (hGt : Version.precedence witness bound = .gt)
+    (hNotCore : ¬ samePrereleaseCoreAs bound witness) :
+    stableCoreLT bound witness := by
+  by_cases hBoundWitness : stableCoreLT bound witness
+  · exact hBoundWitness
+  · by_cases hWitnessBound : stableCoreLT witness bound
+    · have hLt :=
+        precedence_lt_of_stableCoreLT witness bound hWitnessBound
+      rw [hGt] at hLt
+      contradiction
+    · have hMajor : bound.major = witness.major := by
+        unfold stableCoreLT at hBoundWitness hWitnessBound
+        omega
+      have hMinor : bound.minor = witness.minor := by
+        unfold stableCoreLT at hBoundWitness hWitnessBound
+        omega
+      have hPatch : bound.patch = witness.patch := by
+        unfold stableCoreLT at hBoundWitness hWitnessBound
+        omega
+      cases hBoundList : bound.prerelease with
+      | nil =>
+          cases hWitnessList : witness.prerelease with
+          | nil =>
+              simp [hWitnessList] at hWitnessPrerelease
+          | cons witnessHead witnessTail =>
+              have hMajorCompare :
+                  compare witness.major bound.major = .eq :=
+                Nat.compare_eq_eq.mpr hMajor.symm
+              have hMinorCompare :
+                  compare witness.minor bound.minor = .eq :=
+                Nat.compare_eq_eq.mpr hMinor.symm
+              have hPatchCompare :
+                  compare witness.patch bound.patch = .eq :=
+                Nat.compare_eq_eq.mpr hPatch.symm
+              have hLt :=
+                Version.precedence_prerelease_lt_stable_of_same_core
+                  witness bound
+                  hWitnessPrerelease
+                  (by simp [hBoundList])
+                  hMajor.symm hMinor.symm hPatch.symm
+              rw [hGt] at hLt
+              contradiction
+      | cons boundHead boundTail =>
+          have hCore : samePrereleaseCoreAs bound witness :=
+            ⟨by simp [hBoundList], hMajor, hMinor, hPatch⟩
+          exact (hNotCore hCore).elim
+
+private theorem precedence_lt_of_prerelease_le_witness_lt_bound
+    (candidate witness bound : Version)
+    (hCandidate : samePrereleaseCoreAs candidate witness)
+    (hWitnessPrerelease : witness.prerelease.isEmpty = false)
+    (hCandidateWitness : (Version.precedence candidate witness).isLE)
+    (hWitnessBound : Version.precedence witness bound = .lt) :
+    Version.precedence candidate bound = .lt := by
+  by_cases hWitnessBoundCore : stableCoreLT witness bound
+  · rcases hCandidate with
+      ⟨hCandidatePrerelease, hMajor, hMinor, hPatch⟩
+    have hCandidateBoundCore : stableCoreLT candidate bound := by
+      unfold stableCoreLT at hWitnessBoundCore ⊢
+      omega
+    exact
+      precedence_lt_of_stableCoreLT
+        candidate bound hCandidateBoundCore
+  · by_cases hBoundWitnessCore : stableCoreLT bound witness
+    · have hGt :=
+        precedence_gt_of_stableCoreLT bound witness hBoundWitnessCore
+      rw [hWitnessBound] at hGt
+      contradiction
+    · have hMajor : bound.major = witness.major := by
+        unfold stableCoreLT at hWitnessBoundCore hBoundWitnessCore
+        omega
+      have hMinor : bound.minor = witness.minor := by
+        unfold stableCoreLT at hWitnessBoundCore hBoundWitnessCore
+        omega
+      have hPatch : bound.patch = witness.patch := by
+        unfold stableCoreLT at hWitnessBoundCore hBoundWitnessCore
+        omega
+      cases hBoundList : bound.prerelease with
+      | nil =>
+          rcases hCandidate with
+            ⟨hCandidatePrerelease, hCandidateMajor, hCandidateMinor, hCandidatePatch⟩
+          cases hCandidateList : candidate.prerelease with
+          | nil =>
+              simp [hCandidateList] at hCandidatePrerelease
+          | cons candidateHead candidateTail =>
+              have hMajorCompare :
+                  compare candidate.major bound.major = .eq :=
+                Nat.compare_eq_eq.mpr
+                  (hCandidateMajor.trans hMajor.symm)
+              have hMinorCompare :
+                  compare candidate.minor bound.minor = .eq :=
+                Nat.compare_eq_eq.mpr
+                  (hCandidateMinor.trans hMinor.symm)
+              have hPatchCompare :
+                  compare candidate.patch bound.patch = .eq :=
+                Nat.compare_eq_eq.mpr
+                  (hCandidatePatch.trans hPatch.symm)
+              exact
+                Version.precedence_prerelease_lt_stable_of_same_core
+                  candidate bound
+                  hCandidatePrerelease
+                  (by simp [hBoundList])
+                  (hCandidateMajor.trans hMajor.symm)
+                  (hCandidateMinor.trans hMinor.symm)
+                  (hCandidatePatch.trans hPatch.symm)
+      | cons boundHead boundTail =>
+          have hBoundCore : samePrereleaseCoreAs bound witness :=
+            ⟨by simp [hBoundList], hMajor, hMinor, hPatch⟩
+          exact
+            prereleaseCore_lt_of_isLE_of_lt
+              candidate witness bound witness
+              hCandidate
+              ⟨hWitnessPrerelease, rfl, rfl, rfl⟩
+              hBoundCore
+              hCandidateWitness
+              hWitnessBound
+
 /--
 Appending numeric zero preserves prerelease status for a prerelease bound.
 -/

@@ -605,6 +605,28 @@ theorem ordering_prerelease_isLE_trans
                 hThirdList
               ] using hTrans
 
+/--
+At one fixed major/minor/patch core, every prerelease lies below the stable
+release.
+-/
+theorem ordering_prerelease_stable_lt
+    (major minor patch : Nat)
+    (prerelease : List PrereleaseIdentifier)
+    (hPrerelease : prerelease.isEmpty = false) :
+    ordering
+        { major := major, minor := minor, patch := patch, prerelease := prerelease }
+        { major := major, minor := minor, patch := patch, prerelease := [] } =
+      .lt := by
+  cases hList : prerelease with
+  | nil =>
+      simp [hList] at hPrerelease
+  | cons head tail =>
+      simp [
+        ordering,
+        releasePrecedence,
+        hList
+      ]
+
 instance : Ord PrecedenceKey where
   compare := ordering
 
@@ -726,6 +748,39 @@ theorem precedence_prerelease_isLE_trans_of_same_core
     hMinorSecondThird,
     hPatchSecondThird
   ] using hTrans
+/--
+A prerelease version is strictly below a stable version on the same
+major/minor/patch core.
+-/
+theorem precedence_prerelease_lt_stable_of_same_core
+    (left right : Version)
+    (hLeftPrerelease : left.prerelease.isEmpty = false)
+    (hRightStable : right.prerelease.isEmpty = true)
+    (hMajor : left.major = right.major)
+    (hMinor : left.minor = right.minor)
+    (hPatch : left.patch = right.patch) :
+    precedence left right = .lt := by
+  have hRightList : right.prerelease = [] := by
+    cases hList : right.prerelease with
+    | nil =>
+        rfl
+    | cons head tail =>
+        simp [hList] at hRightStable
+  simpa [
+    precedence,
+    precedenceKey,
+    hMajor,
+    hMinor,
+    hPatch,
+    hRightList
+  ] using
+    PrecedenceKey.ordering_prerelease_stable_lt
+      left.major
+      left.minor
+      left.patch
+      left.prerelease
+      hLeftPrerelease
+
 /-- Changing build metadata cannot change the precedence-bearing key. -/
 theorem precedenceKey_ignores_build
     (version : Version)
