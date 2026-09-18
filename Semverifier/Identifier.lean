@@ -49,21 +49,18 @@ inductive PrereleaseIdentifier where
   | text (value : NonNumericIdentifier)
 deriving Repr, BEq, DecidableEq
 
-namespace PrereleaseIdentifier
-
 private def digitsToNat (chars : List Char) : Nat :=
   chars.foldl
     (fun value c => value * 10 + (c.toNat - '0'.toNat))
     0
 
 /--
-Parse exactly one SemVer pre-release identifier.
+Parse a SemVer numeric identifier.
 
-This rejects empty identifiers, non-ASCII identifier characters, and numeric
-identifiers with leading zeroes. Dot splitting belongs to the later full-version
-parser.
+This is shared by major/minor/patch parsing and numeric pre-release identifiers.
+The empty string, non-digits, and leading zeroes are rejected.
 -/
-def parse? (raw : String) : Option PrereleaseIdentifier :=
+def parseNumericIdentifier? (raw : String) : Option Nat :=
   let chars := raw.toList
   match chars with
   | [] => none
@@ -72,11 +69,26 @@ def parse? (raw : String) : Option PrereleaseIdentifier :=
         if first == '0' && !rest.isEmpty then
           none
         else
-          some (.numeric (digitsToNat chars))
+          some (digitsToNat chars)
       else
-        match NonNumericIdentifier.ofString? raw with
-        | some value => some (.text value)
-        | none => none
+        none
+
+namespace PrereleaseIdentifier
+
+/--
+Parse exactly one SemVer pre-release identifier.
+
+This rejects empty identifiers, non-ASCII identifier characters, and numeric
+identifiers with leading zeroes. Dot splitting belongs to the full-version
+parser.
+-/
+def parse? (raw : String) : Option PrereleaseIdentifier :=
+  match parseNumericIdentifier? raw with
+  | some value => some (.numeric value)
+  | none =>
+      match NonNumericIdentifier.ofString? raw with
+      | some value => some (.text value)
+      | none => none
 
 /-- SemVer precedence for one admitted pre-release identifier. -/
 def precedence : PrereleaseIdentifier → PrereleaseIdentifier → Ordering
