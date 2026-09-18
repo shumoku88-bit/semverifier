@@ -439,6 +439,25 @@ theorem ordering_prerelease_append_zero_ne_gt_of_gt
             hWitnessList
           ] using hList
 
+private theorem prereleasePrecedence_self_eq
+    (prerelease : List PrereleaseIdentifier) :
+    prereleasePrecedence prerelease prerelease = .eq := by
+  rw [prereleasePrecedence_eq_compareLex]
+  exact
+    Std.ReflCmp.compare_self
+      (cmp := List.compareLex PrereleaseIdentifier.precedence)
+
+private theorem prereleasePrecedence_swap
+    (left right : List PrereleaseIdentifier) :
+    prereleasePrecedence left right =
+      (prereleasePrecedence right left).swap := by
+  rw [
+    prereleasePrecedence_eq_compareLex,
+    prereleasePrecedence_eq_compareLex
+  ]
+  exact
+    Std.OrientedCmp.eq_swap
+      (cmp := List.compareLex PrereleaseIdentifier.precedence)
 private theorem prereleasePrecedence_isLE_trans
     (first second third : List PrereleaseIdentifier)
     (hFirstSecond : (prereleasePrecedence first second).isLE)
@@ -462,6 +481,60 @@ private theorem prereleasePrecedence_isLE_trans
   rw [prereleasePrecedence_eq_compareLex]
   exact hTrans
 
+/--
+A prerelease key compares equal to itself.
+-/
+theorem ordering_prerelease_self_eq
+    (major minor patch : Nat)
+    (prerelease : List PrereleaseIdentifier)
+    (hPrerelease : prerelease.isEmpty = false) :
+    ordering
+        { major := major, minor := minor, patch := patch, prerelease := prerelease }
+        { major := major, minor := minor, patch := patch, prerelease := prerelease } = .eq := by
+  cases hList : prerelease with
+  | nil =>
+      simp [hList] at hPrerelease
+  | cons head tail =>
+      have hSelf :=
+        prereleasePrecedence_self_eq (head :: tail)
+      simpa [
+        ordering,
+        releasePrecedence,
+        hList
+      ] using hSelf
+
+/--
+Swapping two prereleases on one core swaps their ordering result.
+-/
+theorem ordering_prerelease_swap
+    (major minor patch : Nat)
+    (left right : List PrereleaseIdentifier)
+    (hLeft : left.isEmpty = false)
+    (hRight : right.isEmpty = false) :
+    ordering
+        { major := major, minor := minor, patch := patch, prerelease := left }
+        { major := major, minor := minor, patch := patch, prerelease := right } =
+      (ordering
+        { major := major, minor := minor, patch := patch, prerelease := right }
+        { major := major, minor := minor, patch := patch, prerelease := left }).swap := by
+  cases hLeftList : left with
+  | nil =>
+      simp [hLeftList] at hLeft
+  | cons leftHead leftTail =>
+      cases hRightList : right with
+      | nil =>
+          simp [hRightList] at hRight
+      | cons rightHead rightTail =>
+          have hSwap :=
+            prereleasePrecedence_swap
+              (leftHead :: leftTail)
+              (rightHead :: rightTail)
+          simpa [
+            ordering,
+            releasePrecedence,
+            hLeftList,
+            hRightList
+          ] using hSwap
 /--
 SemVer precedence is transitive within one fixed core when all three values are
 prereleases.
@@ -557,6 +630,102 @@ metadata belongs to the former but not the latter.
 def precedence (left right : Version) : Ordering :=
   PrecedenceKey.ordering left.precedenceKey right.precedenceKey
 
+/--
+A prerelease version compares equal to itself.
+-/
+theorem precedence_prerelease_self_eq
+    (version : Version)
+    (hPrerelease : version.prerelease.isEmpty = false) :
+    precedence version version = .eq := by
+  simpa [precedence, precedenceKey] using
+    PrecedenceKey.ordering_prerelease_self_eq
+      version.major
+      version.minor
+      version.patch
+      version.prerelease
+      hPrerelease
+
+/--
+Same-core prerelease precedence is oriented.
+-/
+theorem precedence_prerelease_swap_of_same_core
+    (left right : Version)
+    (hLeft : left.prerelease.isEmpty = false)
+    (hRight : right.prerelease.isEmpty = false)
+    (hMajor : left.major = right.major)
+    (hMinor : left.minor = right.minor)
+    (hPatch : left.patch = right.patch) :
+    precedence left right = (precedence right left).swap := by
+  simpa [
+    precedence,
+    precedenceKey,
+    hMajor,
+    hMinor,
+    hPatch
+  ] using
+    PrecedenceKey.ordering_prerelease_swap
+      left.major
+      left.minor
+      left.patch
+      left.prerelease
+      right.prerelease
+      hLeft
+      hRight
+
+/--
+Same-core prerelease non-greater-than ordering is transitive.
+-/
+theorem precedence_prerelease_isLE_trans_of_same_core
+    (first second third : Version)
+    (hFirst : first.prerelease.isEmpty = false)
+    (hSecond : second.prerelease.isEmpty = false)
+    (hThird : third.prerelease.isEmpty = false)
+    (hMajorFirstSecond : first.major = second.major)
+    (hMinorFirstSecond : first.minor = second.minor)
+    (hPatchFirstSecond : first.patch = second.patch)
+    (hMajorSecondThird : second.major = third.major)
+    (hMinorSecondThird : second.minor = third.minor)
+    (hPatchSecondThird : second.patch = third.patch)
+    (hFirstSecond : (precedence first second).isLE)
+    (hSecondThird : (precedence second third).isLE) :
+    (precedence first third).isLE := by
+  have hTrans :=
+    PrecedenceKey.ordering_prerelease_isLE_trans
+      second.major
+      second.minor
+      second.patch
+      first.prerelease
+      second.prerelease
+      third.prerelease
+      hFirst
+      hSecond
+      hThird
+      (by
+        simpa [
+          precedence,
+          precedenceKey,
+          hMajorFirstSecond,
+          hMinorFirstSecond,
+          hPatchFirstSecond
+        ] using hFirstSecond)
+      (by
+        simpa [
+          precedence,
+          precedenceKey,
+          hMajorSecondThird,
+          hMinorSecondThird,
+          hPatchSecondThird
+        ] using hSecondThird)
+  simpa [
+    precedence,
+    precedenceKey,
+    hMajorFirstSecond,
+    hMinorFirstSecond,
+    hPatchFirstSecond,
+    hMajorSecondThird,
+    hMinorSecondThird,
+    hPatchSecondThird
+  ] using hTrans
 /-- Changing build metadata cannot change the precedence-bearing key. -/
 theorem precedenceKey_ignores_build
     (version : Version)
