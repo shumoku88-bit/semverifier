@@ -449,6 +449,36 @@ private def prereleaseSuccessor (version : Version) : Version :=
   }
 
 /--
+Appending numeric zero preserves prerelease status for a prerelease bound.
+-/
+private theorem prereleaseSuccessor_is_prerelease
+    (version : Version)
+    (hPrerelease : version.prerelease.isEmpty = false) :
+    (prereleaseSuccessor version).prerelease.isEmpty = false := by
+  simp [prereleaseSuccessor, strippedBound, hPrerelease]
+
+/--
+The generated prerelease successor is strictly above its prerelease bound in
+SemVer precedence.
+-/
+private theorem prereleaseSuccessor_precedence_gt
+    (version : Version)
+    (hPrerelease : version.prerelease.isEmpty = false) :
+    Version.precedence (prereleaseSuccessor version) version = .gt := by
+  simpa [
+    Version.precedence,
+    Version.precedenceKey,
+    prereleaseSuccessor,
+    strippedBound
+  ] using
+    PrecedenceKey.ordering_prerelease_append_zero_gt
+      version.major
+      version.minor
+      version.patch
+      version.prerelease
+      hPrerelease
+
+/--
 Finite boundary candidates contributed by one primitive comparator.
 
 Stable candidates include the release at the bound's core and the next patch
@@ -510,6 +540,17 @@ private theorem prereleaseFloorAtCore_mem_boundary
     (comparator : Comparator)
     (hPrerelease : comparator.bound.prerelease.isEmpty = false) :
     prereleaseFloorAtCore comparator.bound ∈ boundaryCandidates comparator := by
+  simp [boundaryCandidates, hPrerelease]
+
+/--
+A prerelease comparator bound contributes both its build-stripped boundary and
+its strict prerelease successor to the finite candidate pool.
+-/
+private theorem prerelease_boundaries_mem_boundary
+    (comparator : Comparator)
+    (hPrerelease : comparator.bound.prerelease.isEmpty = false) :
+    strippedBound comparator.bound ∈ boundaryCandidates comparator ∧
+      prereleaseSuccessor comparator.bound ∈ boundaryCandidates comparator := by
   simp [boundaryCandidates, hPrerelease]
 
 /--
