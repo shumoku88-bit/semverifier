@@ -4,8 +4,14 @@ import Semverifier.Range
 # Semverifier
 
 The public semantic kernel covers validated SemVer versions, precedence,
-primitive comparators, comparator sets, and range union.
+primitive comparators, comparator sets, default prerelease admission, and range
+union.
 
-Advanced syntax is kept outside that kernel and desugared into it. Full-version
-caret ranges are the first such frontend.
+Surface range syntax is kept outside that kernel and desugared into it.
+Canonical strict forms for partial/X-ranges, operator-prefixed partials, tilde
+(including `~>`), caret, and whole-branch hyphen ranges all reuse the same
+Comparator / ComparatorSet semantics.
+
+Parser compatibility conveniences and richer range algebra are deliberately
+separate from this syntax semantics boundary.
 -/
