@@ -1,3 +1,4 @@
+import Init.Data.Order.Ord
 import Semverifier.Identifier
 
 namespace Semverifier
@@ -113,6 +114,32 @@ theorem ordering_prerelease_append_zero_gt
       ] using
         prereleasePrecedence_append_zero_gt (head :: tail)
 
+private theorem prereleaseIdentifier_precedence_swap
+    (left right : PrereleaseIdentifier) :
+    PrereleaseIdentifier.precedence left right =
+      (PrereleaseIdentifier.precedence right left).swap := by
+  cases left with
+  | numeric leftValue =>
+      cases right with
+      | numeric rightValue =>
+          simpa [PrereleaseIdentifier.precedence] using
+            (Std.OrientedOrd.eq_swap
+              (α := Nat)
+              (a := leftValue)
+              (b := rightValue))
+      | text rightValue =>
+          rfl
+  | text leftValue =>
+      cases right with
+      | numeric rightValue =>
+          rfl
+      | text rightValue =>
+          simpa [PrereleaseIdentifier.precedence] using
+            (Std.OrientedOrd.eq_swap
+              (α := String)
+              (a := leftValue.value)
+              (b := rightValue.value))
+
 /--
 The prerelease list `[0]` is never greater than any non-empty prerelease
 list at the same major/minor/patch core.
@@ -178,6 +205,162 @@ theorem ordering_prerelease_zero_ne_gt
             PrereleaseIdentifier.precedence,
             hList
           ]
+
+private theorem prereleasePrecedence_append_zero_ne_gt_of_gt
+    (bound witness : List PrereleaseIdentifier)
+    (hBound : bound.isEmpty = false)
+    (hWitness : witness.isEmpty = false)
+    (hGt : prereleasePrecedence witness bound = .gt) :
+    prereleasePrecedence
+        (bound ++ [.numeric 0])
+        witness ≠ .gt := by
+  induction bound generalizing witness with
+  | nil =>
+      simp at hBound
+  | cons boundHead boundTail ih =>
+      cases witness with
+      | nil =>
+          simp at hWitness
+      | cons witnessHead witnessTail =>
+          cases hHead :
+              PrereleaseIdentifier.precedence witnessHead boundHead with
+          | lt =>
+              simp [prereleasePrecedence, hHead] at hGt
+          | gt =>
+              have hSwap :=
+                prereleaseIdentifier_precedence_swap
+                  witnessHead boundHead
+              have hReverse :
+                  PrereleaseIdentifier.precedence
+                    boundHead witnessHead = .lt := by
+                cases hReverse :
+                    PrereleaseIdentifier.precedence
+                      boundHead witnessHead <;>
+                  simp [hHead, hReverse] at hSwap ⊢
+              simp [prereleasePrecedence, hReverse]
+          | eq =>
+              have hSwap :=
+                prereleaseIdentifier_precedence_swap
+                  witnessHead boundHead
+              have hReverse :
+                  PrereleaseIdentifier.precedence
+                    boundHead witnessHead = .eq := by
+                cases hReverse :
+                    PrereleaseIdentifier.precedence
+                      boundHead witnessHead <;>
+                  simp [hHead, hReverse] at hSwap ⊢
+              have hTailGt :
+                  prereleasePrecedence witnessTail boundTail = .gt := by
+                simpa [prereleasePrecedence, hHead] using hGt
+              cases boundTail with
+              | nil =>
+                  cases witnessTail with
+                  | nil =>
+                      simp [prereleasePrecedence] at hTailGt
+                  | cons witnessNext witnessRest =>
+                      have hZero :=
+                        ordering_prerelease_zero_ne_gt
+                          0 0 0
+                          (witnessNext :: witnessRest)
+                          (by simp)
+                      have hZeroTail :
+                          prereleasePrecedence
+                              [.numeric 0]
+                              (witnessNext :: witnessRest) ≠ .gt := by
+                        simpa [
+                          ordering,
+                          releasePrecedence
+                        ] using hZero
+                      simpa [
+                        prereleasePrecedence,
+                        hReverse
+                      ] using hZeroTail
+              | cons boundNext boundRest =>
+                  cases witnessTail with
+                  | nil =>
+                      simp [prereleasePrecedence] at hTailGt
+                  | cons witnessNext witnessRest =>
+                      have hRec :=
+                        ih
+                          (witnessNext :: witnessRest)
+                          (by simp)
+                          (by simp)
+                          hTailGt
+                      simpa [
+                        prereleasePrecedence,
+                        hReverse
+                      ] using hRec
+
+/--
+For non-empty prerelease lists on one core, appending numeric zero to a strict
+lower bound yields a candidate that does not exceed any strict witness.
+
+This is the discrete-successor fact used by prerelease range intersection:
+if `witness > bound`, then `bound.0 ≤ witness`.
+-/
+theorem ordering_prerelease_append_zero_ne_gt_of_gt
+    (major minor patch : Nat)
+    (bound witness : List PrereleaseIdentifier)
+    (hBound : bound.isEmpty = false)
+    (hWitness : witness.isEmpty = false)
+    (hGt :
+      ordering
+          {
+            major := major
+            minor := minor
+            patch := patch
+            prerelease := witness
+          }
+          {
+            major := major
+            minor := minor
+            patch := patch
+            prerelease := bound
+          } = .gt) :
+    ordering
+        {
+          major := major
+          minor := minor
+          patch := patch
+          prerelease := bound ++ [.numeric 0]
+        }
+        {
+          major := major
+          minor := minor
+          patch := patch
+          prerelease := witness
+        } ≠ .gt := by
+  cases hBoundList : bound with
+  | nil =>
+      simp [hBoundList] at hBound
+  | cons boundHead boundTail =>
+      cases hWitnessList : witness with
+      | nil =>
+          simp [hWitnessList] at hWitness
+      | cons witnessHead witnessTail =>
+          have hListGt :
+              prereleasePrecedence
+                  (witnessHead :: witnessTail)
+                  (boundHead :: boundTail) = .gt := by
+            simpa [
+              ordering,
+              releasePrecedence,
+              hBoundList,
+              hWitnessList
+            ] using hGt
+          have hList :=
+            prereleasePrecedence_append_zero_ne_gt_of_gt
+              (boundHead :: boundTail)
+              (witnessHead :: witnessTail)
+              (by simp)
+              (by simp)
+              hListGt
+          simpa [
+            ordering,
+            releasePrecedence,
+            hBoundList,
+            hWitnessList
+          ] using hList
 
 instance : Ord PrecedenceKey where
   compare := ordering
