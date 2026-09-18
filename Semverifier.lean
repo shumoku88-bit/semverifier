@@ -1,4 +1,4 @@
-import Semverifier.Range
+import Semverifier.RangeAlgebra
 
 /-!
 # Semverifier
@@ -12,6 +12,10 @@ Canonical strict forms for partial/X-ranges, operator-prefixed partials, tilde
 (including `~>`), caret, and whole-branch hyphen ranges all reuse the same
 Comparator / ComparatorSet semantics.
 
-Parser compatibility conveniences and richer range algebra are deliberately
-separate from this syntax semantics boundary.
+Range algebra is specified extensionally over satisfaction sets:
+intersection means a common accepted version exists, subset means every
+accepted version on the left is accepted on the right, and equivalence means
+both ranges accept exactly the same versions. Executable decision procedures
+are kept separate from these meanings so they can later be proved correct
+against the specification.
 -/
