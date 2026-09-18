@@ -193,7 +193,7 @@ private theorem nextStablePatch_core_le_of_precedence_gt_of_stable_bound
   have hBoundPrerelease : bound.prerelease = [] := by
     cases hPrerelease : bound.prerelease with
     | nil =>
-        exact hPrerelease
+        rfl
     | cons head tail =>
         simp [hPrerelease] at hBoundStable
   cases hMajor : compare candidate.major bound.major with
