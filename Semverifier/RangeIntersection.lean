@@ -1214,96 +1214,6 @@ private theorem prereleaseLowerMaximum_eq_floor_or_exists_lower
                   rw [hMax]
                   exact hLower⟩
 
-private theorem prereleaseFloorAtCore_eq_of_same_core
-    (left right : Version)
-    (hMajor : left.major = right.major)
-    (hMinor : left.minor = right.minor)
-    (hPatch : left.patch = right.patch) :
-    prereleaseFloorAtCore left = prereleaseFloorAtCore right := by
-  simp [prereleaseFloorAtCore, hMajor, hMinor, hPatch]
-
-/--
-The strongest prerelease lower boundary selected from a comparator-set pair is
-already present in the finite pair candidate pool.
--/
-private theorem prereleaseLowerMaximum_mem_pair_candidates
-    (left right : ComparatorSet)
-    (witness : Version)
-    (hWitnessPrerelease : witness.prerelease.isEmpty = false)
-    (hLeft : left.satisfies witness = true) :
-    prereleaseLowerMaximum
-        (left.comparators ++ right.comparators)
-        witness ∈
-      comparatorSetIntersectionCandidates left right := by
-  rcases
-      ComparatorSet.exists_prerelease_bound_same_core_of_satisfies
-        left witness hWitnessPrerelease hLeft with
-    ⟨anchor,
-      hAnchor,
-      hAnchorPrerelease,
-      hAnchorMajor,
-      hAnchorMinor,
-      hAnchorPatch⟩
-  have hFloorEq :
-      prereleaseFloorAtCore anchor.bound =
-        prereleaseFloorAtCore witness :=
-    prereleaseFloorAtCore_eq_of_same_core
-      anchor.bound witness
-      hAnchorMajor hAnchorMinor hAnchorPatch
-  have hAnchorBoundary :
-      prereleaseFloorAtCore witness ∈ boundaryCandidates anchor := by
-    rw [← hFloorEq]
-    exact
-      prereleaseFloorAtCore_mem_boundary
-        anchor hAnchorPrerelease
-  have hFloorInLeft :
-      prereleaseFloorAtCore witness ∈
-        comparatorSetCandidates left := by
-    simp only [comparatorSetCandidates, List.mem_flatMap]
-    exact ⟨anchor, hAnchor, hAnchorBoundary⟩
-  have hFloorInPair :
-      prereleaseFloorAtCore witness ∈
-        comparatorSetIntersectionCandidates left right := by
-    simp [
-      comparatorSetIntersectionCandidates,
-      hFloorInLeft
-    ]
-  rcases
-      prereleaseLowerMaximum_eq_floor_or_exists_lower
-        (left.comparators ++ right.comparators)
-        witness with
-    hFloor | ⟨comparator, hComparator, hMaximum⟩
-  · rw [hFloor]
-    exact hFloorInPair
-  · rcases
-        prereleaseLowerCandidate_eq_floor_or_mem_boundary
-          comparator witness with
-      hLowerFloor | hBoundary
-    · rw [hMaximum, hLowerFloor]
-      exact hFloorInPair
-    · rcases List.mem_append.mp hComparator with
-        hInLeft | hInRight
-      · have hInCandidates :
-            prereleaseLowerCandidate comparator witness ∈
-              comparatorSetCandidates left := by
-          simp only [comparatorSetCandidates, List.mem_flatMap]
-          exact ⟨comparator, hInLeft, hBoundary⟩
-        rw [hMaximum]
-        simp [
-          comparatorSetIntersectionCandidates,
-          hInCandidates
-        ]
-      · have hInCandidates :
-            prereleaseLowerCandidate comparator witness ∈
-              comparatorSetCandidates right := by
-          simp only [comparatorSetCandidates, List.mem_flatMap]
-          exact ⟨comparator, hInRight, hBoundary⟩
-        rw [hMaximum]
-        simp [
-          comparatorSetIntersectionCandidates,
-          hInCandidates
-        ]
-
 /--
 One canonical stable lower-bound candidate contributed by a comparator.
 
@@ -1920,6 +1830,96 @@ Critical-boundary pool for one pair of conjunctive comparator sets.
 def comparatorSetIntersectionCandidates
     (left right : ComparatorSet) : List Version :=
   minimumStable :: (comparatorSetCandidates left ++ comparatorSetCandidates right)
+
+private theorem prereleaseFloorAtCore_eq_of_same_core
+    (left right : Version)
+    (hMajor : left.major = right.major)
+    (hMinor : left.minor = right.minor)
+    (hPatch : left.patch = right.patch) :
+    prereleaseFloorAtCore left = prereleaseFloorAtCore right := by
+  simp [prereleaseFloorAtCore, hMajor, hMinor, hPatch]
+
+/--
+The strongest prerelease lower boundary selected from a comparator-set pair is
+already present in the finite pair candidate pool.
+-/
+private theorem prereleaseLowerMaximum_mem_pair_candidates
+    (left right : ComparatorSet)
+    (witness : Version)
+    (hWitnessPrerelease : witness.prerelease.isEmpty = false)
+    (hLeft : left.satisfies witness = true) :
+    prereleaseLowerMaximum
+        (left.comparators ++ right.comparators)
+        witness ∈
+      comparatorSetIntersectionCandidates left right := by
+  rcases
+      ComparatorSet.exists_prerelease_bound_same_core_of_satisfies
+        left witness hWitnessPrerelease hLeft with
+    ⟨anchor,
+      hAnchor,
+      hAnchorPrerelease,
+      hAnchorMajor,
+      hAnchorMinor,
+      hAnchorPatch⟩
+  have hFloorEq :
+      prereleaseFloorAtCore anchor.bound =
+        prereleaseFloorAtCore witness :=
+    prereleaseFloorAtCore_eq_of_same_core
+      anchor.bound witness
+      hAnchorMajor hAnchorMinor hAnchorPatch
+  have hAnchorBoundary :
+      prereleaseFloorAtCore witness ∈ boundaryCandidates anchor := by
+    rw [← hFloorEq]
+    exact
+      prereleaseFloorAtCore_mem_boundary
+        anchor hAnchorPrerelease
+  have hFloorInLeft :
+      prereleaseFloorAtCore witness ∈
+        comparatorSetCandidates left := by
+    simp only [comparatorSetCandidates, List.mem_flatMap]
+    exact ⟨anchor, hAnchor, hAnchorBoundary⟩
+  have hFloorInPair :
+      prereleaseFloorAtCore witness ∈
+        comparatorSetIntersectionCandidates left right := by
+    simp [
+      comparatorSetIntersectionCandidates,
+      hFloorInLeft
+    ]
+  rcases
+      prereleaseLowerMaximum_eq_floor_or_exists_lower
+        (left.comparators ++ right.comparators)
+        witness with
+    hFloor | ⟨comparator, hComparator, hMaximum⟩
+  · rw [hFloor]
+    exact hFloorInPair
+  · rcases
+        prereleaseLowerCandidate_eq_floor_or_mem_boundary
+          comparator witness with
+      hLowerFloor | hBoundary
+    · rw [hMaximum, hLowerFloor]
+      exact hFloorInPair
+    · rcases List.mem_append.mp hComparator with
+        hInLeft | hInRight
+      · have hInCandidates :
+            prereleaseLowerCandidate comparator witness ∈
+              comparatorSetCandidates left := by
+          simp only [comparatorSetCandidates, List.mem_flatMap]
+          exact ⟨comparator, hInLeft, hBoundary⟩
+        rw [hMaximum]
+        simp [
+          comparatorSetIntersectionCandidates,
+          hInCandidates
+        ]
+      · have hInCandidates :
+            prereleaseLowerCandidate comparator witness ∈
+              comparatorSetCandidates right := by
+          simp only [comparatorSetCandidates, List.mem_flatMap]
+          exact ⟨comparator, hInRight, hBoundary⟩
+        rw [hMaximum]
+        simp [
+          comparatorSetIntersectionCandidates,
+          hInCandidates
+        ]
 
 private theorem stableFloorMaximum_mem_pair_candidates
     (left right : ComparatorSet) :
