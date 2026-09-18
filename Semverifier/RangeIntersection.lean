@@ -67,6 +67,29 @@ private def boundaryCandidates (comparator : Comparator) : List Version :=
 private def comparatorSetCandidates (set : ComparatorSet) : List Version :=
   set.comparators.flatMap boundaryCandidates
 
+/--
+Critical-boundary pool for one pair of conjunctive comparator sets.
+-/
+def comparatorSetIntersectionCandidates
+    (left right : ComparatorSet) : List Version :=
+  minimumStable :: (comparatorSetCandidates left ++ comparatorSetCandidates right)
+
+/--
+The local completeness obligation for one pair of comparator sets.
+
+If the two conjunctions have a common semantic witness, one of their generated
+critical-boundary candidates must also satisfy both conjunctions.
+-/
+def ComparatorSetPairCandidatesComplete
+    (left right : ComparatorSet) : Prop :=
+  (∃ candidate,
+      left.satisfies candidate = true ∧
+      right.satisfies candidate = true) →
+    ∃ candidate,
+      candidate ∈ comparatorSetIntersectionCandidates left right ∧
+      left.satisfies candidate = true ∧
+      right.satisfies candidate = true
+
 private def rangeBoundaryCandidates (range : Range) : List Version :=
   range.sets.flatMap comparatorSetCandidates
 
@@ -113,6 +136,90 @@ def IntersectionCandidatesComplete (left right : Range) : Prop :=
     ∃ candidate,
       candidate ∈ intersectionCandidates left right ∧
       overlapsAt left right candidate = true
+
+private theorem comparatorSetCandidate_mem_rangeCandidates
+    (range : Range)
+    (set : ComparatorSet)
+    (hSet : set ∈ range.sets)
+    (candidate : Version)
+    (hCandidate : candidate ∈ comparatorSetCandidates set) :
+    candidate ∈ rangeBoundaryCandidates range := by
+  simp only [rangeBoundaryCandidates, List.mem_flatMap]
+  exact ⟨set, hSet, hCandidate⟩
+
+private theorem comparatorSetIntersectionCandidate_mem_intersectionCandidates
+    (left right : Range)
+    (leftSet rightSet : ComparatorSet)
+    (hLeftSet : leftSet ∈ left.sets)
+    (hRightSet : rightSet ∈ right.sets)
+    (candidate : Version)
+    (hCandidate :
+      candidate ∈ comparatorSetIntersectionCandidates leftSet rightSet) :
+    candidate ∈ intersectionCandidates left right := by
+  simp only [
+    comparatorSetIntersectionCandidates,
+    List.mem_cons,
+    List.mem_append
+  ] at hCandidate
+  rcases hCandidate with hMinimum | hLeft | hRight
+  · subst candidate
+    simp [intersectionCandidates]
+  · have hInLeft :=
+      comparatorSetCandidate_mem_rangeCandidates
+        left leftSet hLeftSet candidate hLeft
+    simp [intersectionCandidates, hInLeft]
+  · have hInRight :=
+      comparatorSetCandidate_mem_rangeCandidates
+        right rightSet hRightSet candidate hRight
+    simp [intersectionCandidates, hInRight]
+
+/--
+Range-level candidate completeness follows from completeness of every
+conjunctive comparator-set pair.
+
+This removes `||` union structure from the remaining global proof obligation.
+-/
+theorem intersectionCandidatesComplete_of_comparator_set_pairs
+    (left right : Range)
+    (hPairs :
+      ∀ leftSet,
+        leftSet ∈ left.sets →
+        ∀ rightSet,
+          rightSet ∈ right.sets →
+          ComparatorSetPairCandidatesComplete leftSet rightSet) :
+    IntersectionCandidatesComplete left right := by
+  intro hIntersects
+  rcases hIntersects with ⟨witness, hLeft, hRight⟩
+  unfold Contains at hLeft hRight
+  rcases
+      (Range.satisfies_eq_true_iff left witness).mp hLeft with
+    ⟨leftSet, hLeftSet, hLeftWitness⟩
+  rcases
+      (Range.satisfies_eq_true_iff right witness).mp hRight with
+    ⟨rightSet, hRightSet, hRightWitness⟩
+  have hPairWitness :
+      ∃ candidate,
+        leftSet.satisfies candidate = true ∧
+        rightSet.satisfies candidate = true :=
+    ⟨witness, hLeftWitness, hRightWitness⟩
+  rcases
+      hPairs leftSet hLeftSet rightSet hRightSet hPairWitness with
+    ⟨candidate, hCandidate, hLeftCandidate, hRightCandidate⟩
+  refine ⟨candidate, ?_, ?_⟩
+  · exact
+      comparatorSetIntersectionCandidate_mem_intersectionCandidates
+        left right leftSet rightSet
+        hLeftSet hRightSet candidate hCandidate
+  · apply (overlapsAt_eq_true_iff left right candidate).mpr
+    constructor
+    · unfold Contains
+      exact
+        (Range.satisfies_eq_true_iff left candidate).mpr
+          ⟨leftSet, hLeftSet, hLeftCandidate⟩
+    · unfold Contains
+      exact
+        (Range.satisfies_eq_true_iff right candidate).mpr
+          ⟨rightSet, hRightSet, hRightCandidate⟩
 
 private theorem firstOverlap?_exists_some_of_mem_overlap
     (left right : Range)
