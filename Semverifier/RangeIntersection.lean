@@ -137,7 +137,7 @@ def IntersectionCandidatesComplete (left right : Range) : Prop :=
       candidate ∈ intersectionCandidates left right ∧
       overlapsAt left right candidate = true
 
-private theorem comparatorSetCandidate_mem_rangeCandidates_left
+private theorem comparatorSetCandidate_mem_rangeCandidates
     (range : Range)
     (set : ComparatorSet)
     (hSet : set ∈ range.sets)
@@ -146,15 +146,6 @@ private theorem comparatorSetCandidate_mem_rangeCandidates_left
     candidate ∈ rangeBoundaryCandidates range := by
   simp only [rangeBoundaryCandidates, List.mem_flatMap]
   exact ⟨set, hSet, hCandidate⟩
-
-private theorem comparatorSetCandidate_mem_rangeCandidates_right
-    (range : Range)
-    (set : ComparatorSet)
-    (hSet : set ∈ range.sets)
-    (candidate : Version)
-    (hCandidate : candidate ∈ comparatorSetCandidates set) :
-    candidate ∈ rangeBoundaryCandidates range := by
-  simp [rangeBoundaryCandidates, List.mem_flatMap, hSet, hCandidate]
 
 private theorem comparatorSetIntersectionCandidate_mem_intersectionCandidates
     (left right : Range)
@@ -174,11 +165,11 @@ private theorem comparatorSetIntersectionCandidate_mem_intersectionCandidates
   · subst candidate
     simp [intersectionCandidates]
   · have hInLeft :=
-      comparatorSetCandidate_mem_rangeCandidates_left
+      comparatorSetCandidate_mem_rangeCandidates
         left leftSet hLeftSet candidate hLeft
     simp [intersectionCandidates, hInLeft]
   · have hInRight :=
-      comparatorSetCandidate_mem_rangeCandidates_right
+      comparatorSetCandidate_mem_rangeCandidates
         right rightSet hRightSet candidate hRight
     simp [intersectionCandidates, hInRight]
 
