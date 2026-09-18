@@ -1,4 +1,5 @@
 import Semverifier.Caret
+import Semverifier.HyphenRange
 import Semverifier.Tilde
 import Semverifier.XRange
 
@@ -31,16 +32,21 @@ private def parseTerm? (raw : String) : Option (List Comparator) :=
     | some comparator => some [comparator]
     | none => (XRange.parse? raw).map (fun set => set.comparators)
 
-private def parseBranch? (raw : String) : Option ComparatorSet := do
+private def parseOrdinaryBranch? (raw : String) : Option ComparatorSet := do
   let chunks ← (branchTokens raw).mapM parseTerm?
   some { comparators := chunks.foldr (· ++ ·) [] }
+
+private def parseBranch? (raw : String) : Option ComparatorSet :=
+  match HyphenRange.parse? raw with
+  | some set => some set
+  | none => parseOrdinaryBranch? raw
 
 /--
 Parse a range as `||`-separated comparator sets.
 
 Each branch accepts primitive comparators plus the frontends that have already
-been defined. Full-version caret and tilde syntax, bare partial versions, and
-X-ranges are currently supported.
+been defined. Caret, tilde, partial/X-range, and whole-branch strict hyphen
+syntax are desugared into comparator sets before satisfaction.
 
 Empty branches are admitted because node-semver's empty range branch behaves as
 "any stable version" under default prerelease semantics.
