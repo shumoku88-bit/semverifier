@@ -36,10 +36,13 @@ def desugar (version : Version) : ComparatorSet :=
     ]
   }
 
-private def dropTildePrefix? (raw : String) : Option Substring :=
-  match raw.dropPrefix? "~>" with
-  | some rest => some rest
-  | none => raw.dropPrefix? "~"
+private def dropTildePrefix? (raw : String) : Option String :=
+  if let some rest := raw.dropPrefix? "~>" then
+    some rest.toString
+  else if let some rest := raw.dropPrefix? "~" then
+    some rest.toString
+  else
+    none
 
 /--
 Parse tilde syntax into the existing comparator-set kernel.
@@ -58,8 +61,7 @@ The npm `~>` alias is accepted as an exact synonym for `~`; both prefixes
 share the same desugaring path.
 -/
 def parse? (raw : String) : Option ComparatorSet := do
-  let rest ← dropTildePrefix? raw
-  let body := rest.toString
+  let body ← dropTildePrefix? raw
   match Version.parse? body with
   | some version => some (desugar version)
   | none => XRange.parseBare? body
