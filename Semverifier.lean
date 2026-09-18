@@ -1,11 +1,11 @@
-import Semverifier.ComparatorSet
+import Semverifier.Range
 
 /-!
 # Semverifier
 
 The public semantic kernel currently covers validated SemVer versions,
-precedence, primitive comparators, and comparator-set satisfaction including
-default pre-release admission.
+precedence, primitive comparators, comparator sets, and range union.
 
-Range union and advanced range syntax remain outside this boundary.
+Advanced npm range syntax remains outside this boundary until the union-of-
+intersections semantics is established independently.
 -/
