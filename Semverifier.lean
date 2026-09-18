@@ -1,11 +1,11 @@
-import Semverifier.Comparator
+import Semverifier.ComparatorSet
 
 /-!
 # Semverifier
 
 The public semantic kernel currently covers validated SemVer versions,
-precedence, and primitive comparator satisfaction.
+precedence, primitive comparators, and comparator-set satisfaction including
+default pre-release admission.
 
-Range composition and conformance adapters remain outside this boundary until
-primitive comparator semantics are established independently.
+Range union and advanced range syntax remain outside this boundary.
 -/
