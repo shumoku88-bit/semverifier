@@ -95,9 +95,8 @@ changing Semverifier semantics.
 
 ## Bounded candidate-coverage audit
 
-Before attempting a global completeness theorem for
-`Range.findIntersectionWitness?`, CI also falsifies the current finite boundary
-candidate pool against the existing bounded version corpus.
+Before the global completeness proof was closed, CI also falsified the finite
+boundary candidate pool against the existing bounded version corpus.
 
 For all 40,804 ordered range pairs:
 
@@ -107,7 +106,11 @@ For all 40,804 ordered range pairs:
 - no bounded-universe intersection witness is missed by the boundary candidate
   search.
 
-This is evidence for the candidate construction, not a proof of global
-completeness. The next formal step is still to prove that any semantic
-intersection can be reduced to one of the generated critical-boundary
-candidates.
+This audit is now historical evidence rather than the completeness argument.
+Global candidate-pool completeness is proved in Lean, culminating in
+`Range.intersectionCandidatesComplete`,
+`Range.findIntersectionWitness?_complete_verified`, and
+`Range.findIntersectionWitness?_none_iff_not_intersects_verified`.
+
+The next project phase is to expose the verified search through a small
+external oracle/CLI. See [NEXT.md](NEXT.md).

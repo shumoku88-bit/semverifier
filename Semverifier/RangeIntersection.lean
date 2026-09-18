@@ -3005,11 +3005,10 @@ private def rangeBoundaryCandidates (range : Range) : List Version :=
   range.sets.flatMap comparatorSetCandidates
 
 /--
-Finite candidate pool used by the first intersection witness search.
+Finite candidate pool used by the verified intersection witness search.
 
-This pool is deliberately exposed for inspection. At this stage Semverifier
-proves only soundness of returned witnesses; completeness of this finite pool
-is a separate theorem still to be established.
+The pool is deliberately exposed for inspection. Its global completeness is
+proved below by `intersectionCandidatesComplete`.
 -/
 def intersectionCandidates (left right : Range) : List Version :=
   minimumStable ::
@@ -3028,19 +3027,19 @@ private def firstOverlap?
 /--
 Search the finite critical-boundary pool for a concrete intersection witness.
 
-A returned version is proved sound below. Returning `none` does not yet mean
-that the ranges are disjoint; that conclusion waits for a completeness proof
-for `intersectionCandidates`.
+Returned witnesses are sound, and the completed candidate-pool proof below
+shows that returning `none` is exactly semantic disjointness.
 -/
 def findIntersectionWitness? (left right : Range) : Option Version :=
   firstOverlap? left right (intersectionCandidates left right)
 
 /--
-The one remaining mathematical obligation for global completeness of the finite
-intersection search.
+Candidate-pool completeness property for the finite intersection search.
 
 It says that whenever the semantic ranges intersect, at least one generated
-critical-boundary candidate is itself a concrete overlap witness.
+critical-boundary candidate is itself a concrete overlap witness. The theorem
+`intersectionCandidatesComplete` proves this property for every pair of
+ranges.
 -/
 def IntersectionCandidatesComplete (left right : Range) : Prop :=
   Intersects left right →

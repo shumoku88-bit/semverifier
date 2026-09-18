@@ -22,6 +22,18 @@ The aim is not to invent another package manager or to replace mature SemVer
 libraries. The long-term experiment is to build a small verified semantic
 oracle that existing implementations can be checked against.
 
+## Current checkpoint
+
+Range-intersection witness search is now proved sound and complete for the
+modeled semantics. The finite critical-boundary pool is complete, every
+semantic intersection produces a concrete returned witness, and
+`findIntersectionWitness? = none` is proved equivalent to semantic
+disjointness.
+
+The next phase is intentionally thinner than the proof work: expose the
+verified search as a small external oracle/CLI rather than expanding the
+semantic kernel. See [docs/NEXT.md](docs/NEXT.md) for the current handoff.
+
 ## Range syntax milestone
 
 The first range-syntax semantics milestone is complete.
