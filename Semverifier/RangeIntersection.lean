@@ -64,6 +64,39 @@ private def boundaryCandidates (comparator : Comparator) : List Version :=
       prereleaseSuccessor bound
     ]
 
+/--
+One canonical stable lower-bound candidate contributed by a comparator.
+
+Upper-only comparators contribute the global minimum stable release. Inclusive
+lower bounds and equality contribute the stable release at the bound's core.
+A strict lower bound on a stable release advances one patch; a strict lower
+bound on a prerelease can use the stable release at the same core.
+-/
+private def stableFloorCandidate (comparator : Comparator) : Version :=
+  match comparator.operator with
+  | .lt | .lte => minimumStable
+  | .gte | .eq => stableAtCore comparator.bound
+  | .gt =>
+      if comparator.bound.prerelease.isEmpty then
+        nextStablePatch comparator.bound
+      else
+        stableAtCore comparator.bound
+
+/--
+Every per-comparator stable floor is already represented by the existing
+critical-boundary construction, except for the global minimum which is added
+once at comparator-set-pair level.
+-/
+private theorem stableFloorCandidate_eq_minimum_or_mem_boundary
+    (comparator : Comparator) :
+    stableFloorCandidate comparator = minimumStable ∨
+      stableFloorCandidate comparator ∈ boundaryCandidates comparator := by
+  cases comparator with
+  | mk operator bound =>
+      cases operator <;>
+        simp [stableFloorCandidate, boundaryCandidates]
+      split <;> simp_all [stableFloorCandidate, boundaryCandidates]
+
 private def comparatorSetCandidates (set : ComparatorSet) : List Version :=
   set.comparators.flatMap boundaryCandidates
 
