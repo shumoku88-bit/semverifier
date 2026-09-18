@@ -117,10 +117,10 @@ private def bareRange : Partial → ComparatorSet
 
 private def operatorRange
     (operator : ComparatorOperator)
-    (partial : Partial) : ComparatorSet :=
-  match operator, partial with
-  | .eq, partial =>
-      bareRange partial
+    (shape : Partial) : ComparatorSet :=
+  match operator, shape with
+  | .eq, shape =>
+      bareRange shape
   | .gte, .any =>
       any
   | .gte, .major major =>
@@ -166,10 +166,10 @@ Complete versions remain owned by the primitive-comparator parser.
 -/
 def parse? (raw : String) : Option ComparatorSet := do
   let (operator?, partialRaw) := splitOperator raw
-  let partial ← parsePartial? partialRaw
+  let shape ← parsePartial? partialRaw
   match operator? with
-  | none => some (bareRange partial)
-  | some operator => some (operatorRange operator partial)
+  | none => some (bareRange shape)
+  | some operator => some (operatorRange operator shape)
 
 end XRange
 end Semverifier
