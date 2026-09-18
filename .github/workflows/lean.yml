@@ -30,3 +30,4 @@ jobs:
           lake env lean Semverifier/Tests/Identifier.lean
           lake env lean Semverifier/Tests/Version.lean
           lake env lean Semverifier/Tests/Parser.lean
+          lake env lean Semverifier/Tests/Comparator.lean
