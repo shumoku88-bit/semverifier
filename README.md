@@ -82,7 +82,8 @@ example:
 - `1.2.3 - 3.4` becomes `>=1.2.3 <3.5.0-0`;
 - `1 - 2` becomes `>=1.0.0 <3.0.0-0`.
 
-The `~>` alias remains intentionally out of scope.
+The npm-style `~>` spelling is accepted as an exact alias for `~`, using the
+same desugaring path rather than introducing separate semantics.
 
 ## Design rule
 
@@ -97,7 +98,7 @@ The supported subset is checked differentially against node-semver 7.8.5 in CI.
 The deterministic corpus currently includes primitive comparators, conjunction,
 union, prerelease admission, full-version caret/tilde syntax, bare
 partial/X-ranges, operator-prefixed partial/X-ranges, partial tilde ranges,
-partial caret ranges, and strict hyphen ranges.
+the `~>` tilde alias, partial caret ranges, and strict hyphen ranges.
 
 A Lean executable generates a deterministic matrix of supported ranges and
 versions, evaluates every pair with Semverifier, and a small Node adapter checks
