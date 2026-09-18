@@ -22,6 +22,26 @@ The aim is not to invent another package manager or to replace mature SemVer
 libraries. The long-term experiment is to build a small verified semantic
 oracle that existing implementations can be checked against.
 
+## Range syntax milestone
+
+The first range-syntax semantics milestone is complete.
+
+Canonical strict forms for primitive comparators, conjunction, `||`, partial
+and X-ranges, operator-prefixed partials, tilde, `~>`, caret, and strict
+hyphen ranges now all lower into the same `Comparator` / `ComparatorSet`
+kernel.
+
+At the milestone checkpoint, the deterministic differential corpus contains
+202 range expressions × 384 candidate versions = **77,568 judgments**, all
+agreeing with node-semver 7.8.5.
+
+This is a semantic milestone, not a claim of drop-in parser compatibility.
+Whitespace conveniences, leading-`v` compatibility, `loose`,
+`includePrerelease`, and richer range algebra remain separate work.
+
+See [docs/RANGE_SYNTAX_MILESTONE.md](docs/RANGE_SYNTAX_MILESTONE.md) for the
+checkpoint boundary.
+
 ## First milestone
 
 The first milestone models:
