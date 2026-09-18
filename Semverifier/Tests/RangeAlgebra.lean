@@ -29,7 +29,15 @@ example :
     Range.Intersects
       (parsedRange ">=1.0.0 <2.0.0")
       (parsedRange ">=1.5.0 <3.0.0") := by
-  refine ⟨version "1.5.0", ?_, ?_⟩ <;> native_decide
+  refine ⟨version "1.5.0", ?_, ?_⟩
+  · change
+      (parsedRange ">=1.0.0 <2.0.0").satisfies
+        (version "1.5.0") = true
+    native_decide
+  · change
+      (parsedRange ">=1.5.0 <3.0.0").satisfies
+        (version "1.5.0") = true
+    native_decide
 
 example :
     Range.SubsetOf
