@@ -1398,6 +1398,83 @@ def ComparatorSetPairPrereleaseCandidatesComplete
       right.satisfies candidate = true
 
 /--
+Primitive-only remainder of prerelease comparator-set-pair completeness.
+
+Admission is intentionally absent here. A candidate only has to stay on the
+witness core, remain a prerelease, belong to the generated pool, and satisfy
+every primitive comparator in both sets.
+-/
+def ComparatorSetPairPrereleasePrimitiveCandidatesComplete
+    (left right : ComparatorSet) : Prop :=
+  ∀ witness,
+    witness.prerelease.isEmpty = false →
+    left.satisfies witness = true →
+    right.satisfies witness = true →
+    ∃ candidate,
+      candidate ∈ comparatorSetIntersectionCandidates left right ∧
+      candidate.prerelease.isEmpty = false ∧
+      candidate.major = witness.major ∧
+      candidate.minor = witness.minor ∧
+      candidate.patch = witness.patch ∧
+      (∀ comparator ∈ left.comparators,
+        comparator.satisfies candidate = true) ∧
+      (∀ comparator ∈ right.comparators,
+        comparator.satisfies candidate = true)
+
+/--
+Once the primitive-only prerelease obligation is solved, set-local admission
+is recovered automatically from the original same-core witness.
+-/
+theorem comparatorSetPairPrereleaseCandidatesComplete_of_primitives
+    (left right : ComparatorSet)
+    (hPrimitive :
+      ComparatorSetPairPrereleasePrimitiveCandidatesComplete left right) :
+    ComparatorSetPairPrereleaseCandidatesComplete left right := by
+  intro hWitness
+  rcases hWitness with
+    ⟨witness, hWitnessPrerelease, hLeftWitness, hRightWitness⟩
+  rcases
+      hPrimitive witness
+        hWitnessPrerelease hLeftWitness hRightWitness with
+    ⟨candidate,
+      hCandidate,
+      hCandidatePrerelease,
+      hMajor,
+      hMinor,
+      hPatch,
+      hLeftPrimitive,
+      hRightPrimitive⟩
+  have hLeftAdmission :
+      left.prereleaseAdmitted candidate = true := by
+    exact
+      ComparatorSet.prereleaseAdmitted_of_same_core_as_satisfied
+        left witness candidate
+        hWitnessPrerelease hLeftWitness hCandidatePrerelease
+        hMajor hMinor hPatch
+  have hRightAdmission :
+      right.prereleaseAdmitted candidate = true := by
+    exact
+      ComparatorSet.prereleaseAdmitted_of_same_core_as_satisfied
+        right witness candidate
+        hWitnessPrerelease hRightWitness hCandidatePrerelease
+        hMajor hMinor hPatch
+  have hLeftCandidate :
+      left.satisfies candidate = true := by
+    exact
+      (ComparatorSet.satisfies_eq_true_iff left candidate).mpr
+        ⟨hLeftPrimitive, hLeftAdmission⟩
+  have hRightCandidate :
+      right.satisfies candidate = true := by
+    exact
+      (ComparatorSet.satisfies_eq_true_iff right candidate).mpr
+        ⟨hRightPrimitive, hRightAdmission⟩
+  exact
+    ⟨candidate,
+      hCandidate,
+      hLeftCandidate,
+      hRightCandidate⟩
+
+/--
 The local completeness obligation splits exactly into stable and prerelease
 witness cases.
 -/
