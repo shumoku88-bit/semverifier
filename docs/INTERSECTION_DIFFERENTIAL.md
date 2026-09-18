@@ -91,3 +91,23 @@ Any additional witness-backed contradiction remains a CI failure.
 
 If node-semver fixes the known case, the warning naturally disappears without
 changing Semverifier semantics.
+
+
+## Bounded candidate-coverage audit
+
+Before attempting a global completeness theorem for
+`Range.findIntersectionWitness?`, CI also falsifies the current finite boundary
+candidate pool against the existing bounded version corpus.
+
+For all 40,804 ordered range pairs:
+
+- 23,410 already produce a sound concrete witness;
+- the remaining 17,394 `none` results are exhaustively checked against all
+  384 corpus versions;
+- no bounded-universe intersection witness is missed by the boundary candidate
+  search.
+
+This is evidence for the candidate construction, not a proof of global
+completeness. The next formal step is still to prove that any semantic
+intersection can be reduced to one of the generated critical-boundary
+candidates.
