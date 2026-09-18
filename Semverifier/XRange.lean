@@ -147,6 +147,17 @@ private def operatorRange
       singleton .lt (minorUpperBound major minor)
 
 /--
+Parse only a bare partial version or X-range.
+
+This entry point intentionally excludes comparator operators so other frontends
+can reuse the canonical partial-version boundaries without accidentally
+admitting their own operator syntax.
+-/
+def parseBare? (raw : String) : Option ComparatorSet := do
+  let shape ← parsePartial? raw
+  some (bareRange shape)
+
+/--
 Parse partial versions and X-ranges into the existing comparator-set kernel.
 
 Bare forms desugar to intervals:
@@ -166,10 +177,11 @@ Complete versions remain owned by the primitive-comparator parser.
 -/
 def parse? (raw : String) : Option ComparatorSet := do
   let (operator?, partialRaw) := splitOperator raw
-  let shape ← parsePartial? partialRaw
   match operator? with
-  | none => some (bareRange shape)
-  | some operator => some (operatorRange operator shape)
+  | none => parseBare? partialRaw
+  | some operator => do
+      let shape ← parsePartial? partialRaw
+      some (operatorRange operator shape)
 
 end XRange
 end Semverifier
