@@ -24,6 +24,31 @@ deriving Repr, BEq, DecidableEq
 
 namespace Comparator
 
+private def splitOperator (raw : String) : ComparatorOperator × String :=
+  if let some rest := raw.dropPrefix? "<=" then
+    (.lte, rest.toString)
+  else if let some rest := raw.dropPrefix? ">=" then
+    (.gte, rest.toString)
+  else if let some rest := raw.dropPrefix? "<" then
+    (.lt, rest.toString)
+  else if let some rest := raw.dropPrefix? ">" then
+    (.gt, rest.toString)
+  else if let some rest := raw.dropPrefix? "=" then
+    (.eq, rest.toString)
+  else
+    (.eq, raw)
+
+/--
+Parse one primitive comparator whose bound is a complete SemVer version.
+
+Partial-version and range sugar such as `>1`, wildcards, tilde, and caret are
+deliberately not admitted here.
+-/
+def parse? (raw : String) : Option Comparator := do
+  let (operator, boundRaw) := splitOperator raw
+  let bound ← Version.parse? boundRaw
+  some { operator, bound }
+
 /-- Decide whether a version satisfies one primitive comparator. -/
 def satisfies (comparator : Comparator) (candidate : Version) : Bool :=
   match comparator.operator, Version.precedence candidate comparator.bound with
