@@ -118,6 +118,62 @@ theorem exists_prerelease_bound_same_core_of_satisfies
       set candidate hPrerelease).mp hAdmission
 
 /--
+One explicit same-core prerelease anchor admits any prerelease candidate on
+that core.
+-/
+theorem prereleaseAdmitted_of_anchor
+    (set : ComparatorSet)
+    (candidate : Version)
+    (hCandidatePrerelease : candidate.prerelease.isEmpty = false)
+    (anchor : Comparator)
+    (hAnchor : anchor ∈ set.comparators)
+    (hAnchorPrerelease : anchor.bound.prerelease.isEmpty = false)
+    (hMajor : anchor.bound.major = candidate.major)
+    (hMinor : anchor.bound.minor = candidate.minor)
+    (hPatch : anchor.bound.patch = candidate.patch) :
+    set.prereleaseAdmitted candidate = true := by
+  exact
+    (prereleaseAdmitted_eq_true_iff_of_prerelease
+      set candidate hCandidatePrerelease).mpr
+        ⟨anchor,
+          hAnchor,
+          hAnchorPrerelease,
+          hMajor,
+          hMinor,
+          hPatch⟩
+
+/--
+Once a comparator set accepts one prerelease witness, every prerelease
+candidate on the same core automatically passes that set's admission gate.
+-/
+theorem prereleaseAdmitted_of_same_core_as_satisfied
+    (set : ComparatorSet)
+    (witness candidate : Version)
+    (hWitnessPrerelease : witness.prerelease.isEmpty = false)
+    (hWitnessSatisfies : set.satisfies witness = true)
+    (hCandidatePrerelease : candidate.prerelease.isEmpty = false)
+    (hMajor : candidate.major = witness.major)
+    (hMinor : candidate.minor = witness.minor)
+    (hPatch : candidate.patch = witness.patch) :
+    set.prereleaseAdmitted candidate = true := by
+  rcases
+      exists_prerelease_bound_same_core_of_satisfies
+        set witness hWitnessPrerelease hWitnessSatisfies with
+    ⟨anchor,
+      hAnchor,
+      hAnchorPrerelease,
+      hAnchorMajor,
+      hAnchorMinor,
+      hAnchorPatch⟩
+  apply
+    prereleaseAdmitted_of_anchor
+      set candidate hCandidatePrerelease
+      anchor hAnchor hAnchorPrerelease
+  · exact hAnchorMajor.trans hMajor.symm
+  · exact hAnchorMinor.trans hMinor.symm
+  · exact hAnchorPatch.trans hPatch.symm
+
+/--
 Stable candidates are admitted by every comparator set.
 
 The node-semver prerelease gate is therefore irrelevant in the stable branch
