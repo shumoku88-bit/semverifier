@@ -60,9 +60,47 @@ example :
     (parsedRange "1.x <1.5.0").satisfies (version "1.5.0") = false := by
   native_decide
 
--- Operator-prefixed partial versions remain outside this frontend.
-example : Range.parse? ">1" = none := by
+-- Operator-prefixed partials are routed through XRange desugaring.
+example :
+    (parsedRange ">1").satisfies (version "1.9.9") = false := by
   native_decide
 
-example : Range.parse? "<=1.2" = none := by
+example :
+    (parsedRange ">1").satisfies (version "2.0.0") = true := by
+  native_decide
+
+example :
+    (parsedRange ">=1.2").satisfies (version "1.2.0") = true := by
+  native_decide
+
+example :
+    (parsedRange "<2.x").satisfies (version "1.9.9") = true := by
+  native_decide
+
+example :
+    (parsedRange "<2.x").satisfies (version "2.0.0") = false := by
+  native_decide
+
+example :
+    (parsedRange "<=1.2.x").satisfies (version "1.2.99") = true := by
+  native_decide
+
+example :
+    (parsedRange "<=1.2.x").satisfies (version "1.3.0") = false := by
+  native_decide
+
+example :
+    (parsedRange ">1 <=2.x").satisfies (version "2.7.0") = true := by
+  native_decide
+
+example :
+    (parsedRange ">1 <=2.x").satisfies (version "3.0.0-alpha") = false := by
+  native_decide
+
+example :
+    (parsedRange ">1 || <=0.2.x").satisfies (version "0.2.9") = true := by
+  native_decide
+
+example :
+    (parsedRange ">1 || <=0.2.x").satisfies (version "1.5.0") = false := by
   native_decide
