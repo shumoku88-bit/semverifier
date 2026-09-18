@@ -73,6 +73,50 @@ theorem satisfies_eq_true_iff
   simp [satisfies]
 
 /--
+For a prerelease candidate, admission is equivalent to the existence of a
+prerelease comparator bound on the same major/minor/patch core.
+-/
+theorem prereleaseAdmitted_eq_true_iff_of_prerelease
+    (set : ComparatorSet)
+    (candidate : Version)
+    (hPrerelease : candidate.prerelease.isEmpty = false) :
+    set.prereleaseAdmitted candidate = true ↔
+      ∃ comparator,
+        comparator ∈ set.comparators ∧
+        comparator.bound.prerelease.isEmpty = false ∧
+        comparator.bound.major = candidate.major ∧
+        comparator.bound.minor = candidate.minor ∧
+        comparator.bound.patch = candidate.patch := by
+  simp [
+    prereleaseAdmitted,
+    hPrerelease,
+    sameCore,
+    Bool.and_eq_true
+  ]
+
+/--
+A comparator set accepting a prerelease candidate therefore carries an
+explicit same-core prerelease anchor.
+-/
+theorem exists_prerelease_bound_same_core_of_satisfies
+    (set : ComparatorSet)
+    (candidate : Version)
+    (hPrerelease : candidate.prerelease.isEmpty = false)
+    (hSatisfies : set.satisfies candidate = true) :
+    ∃ comparator,
+      comparator ∈ set.comparators ∧
+      comparator.bound.prerelease.isEmpty = false ∧
+      comparator.bound.major = candidate.major ∧
+      comparator.bound.minor = candidate.minor ∧
+      comparator.bound.patch = candidate.patch := by
+  have hAdmission :
+      set.prereleaseAdmitted candidate = true :=
+    ((satisfies_eq_true_iff set candidate).mp hSatisfies).2
+  exact
+    (prereleaseAdmitted_eq_true_iff_of_prerelease
+      set candidate hPrerelease).mp hAdmission
+
+/--
 Stable candidates are admitted by every comparator set.
 
 The node-semver prerelease gate is therefore irrelevant in the stable branch
