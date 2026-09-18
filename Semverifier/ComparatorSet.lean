@@ -91,7 +91,8 @@ theorem prereleaseAdmitted_eq_true_iff_of_prerelease
     prereleaseAdmitted,
     hPrerelease,
     sameCore,
-    Bool.and_eq_true
+    Bool.and_eq_true,
+    and_assoc
   ]
 
 /--
