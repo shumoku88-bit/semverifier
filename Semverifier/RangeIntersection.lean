@@ -597,6 +597,122 @@ private theorem prereleaseCore_isLE_trans
       hFirstSecond
       hSecondThird
 
+private theorem prereleaseCore_lt_of_isLE_of_lt
+    (first second third reference : Version)
+    (hFirst : samePrereleaseCoreAs first reference)
+    (hSecond : samePrereleaseCoreAs second reference)
+    (hThird : samePrereleaseCoreAs third reference)
+    (hFirstSecond : (Version.precedence first second).isLE)
+    (hSecondThird : Version.precedence second third = .lt) :
+    Version.precedence first third = .lt := by
+  have hFirstThirdLE :=
+    prereleaseCore_isLE_trans
+      first second third reference
+      hFirst hSecond hThird
+      hFirstSecond
+      (by simp [hSecondThird])
+  cases hFirstThird : Version.precedence first third with
+  | lt =>
+      rfl
+  | gt =>
+      simp [hFirstThird] at hFirstThirdLE
+  | eq =>
+      rcases hFirst with
+        ⟨hFirstPrerelease, hFirstMajor, hFirstMinor, hFirstPatch⟩
+      rcases hSecond with
+        ⟨hSecondPrerelease, hSecondMajor, hSecondMinor, hSecondPatch⟩
+      rcases hThird with
+        ⟨hThirdPrerelease, hThirdMajor, hThirdMinor, hThirdPatch⟩
+      have hSwapFirstThird :=
+        Version.precedence_prerelease_swap_of_same_core
+          first third
+          hFirstPrerelease hThirdPrerelease
+          (hFirstMajor.trans hThirdMajor.symm)
+          (hFirstMinor.trans hThirdMinor.symm)
+          (hFirstPatch.trans hThirdPatch.symm)
+      have hThirdFirstEq :
+          Version.precedence third first = .eq := by
+        cases hReverse : Version.precedence third first <;>
+          simp [hFirstThird, hReverse] at hSwapFirstThird ⊢
+      have hThirdSecondLE :=
+        prereleaseCore_isLE_trans
+          third first second reference
+          ⟨hThirdPrerelease, hThirdMajor, hThirdMinor, hThirdPatch⟩
+          ⟨hFirstPrerelease, hFirstMajor, hFirstMinor, hFirstPatch⟩
+          ⟨hSecondPrerelease, hSecondMajor, hSecondMinor, hSecondPatch⟩
+          (by simp [hThirdFirstEq])
+          hFirstSecond
+      have hSwapSecondThird :=
+        Version.precedence_prerelease_swap_of_same_core
+          second third
+          hSecondPrerelease hThirdPrerelease
+          (hSecondMajor.trans hThirdMajor.symm)
+          (hSecondMinor.trans hThirdMinor.symm)
+          (hSecondPatch.trans hThirdPatch.symm)
+      have hThirdSecondGt :
+          Version.precedence third second = .gt := by
+        cases hReverse : Version.precedence third second <;>
+          simp [hSecondThird, hReverse] at hSwapSecondThird ⊢
+      simp [hThirdSecondGt] at hThirdSecondLE
+
+private theorem prereleaseCore_lt_of_lt_of_isLE
+    (first second third reference : Version)
+    (hFirst : samePrereleaseCoreAs first reference)
+    (hSecond : samePrereleaseCoreAs second reference)
+    (hThird : samePrereleaseCoreAs third reference)
+    (hFirstSecond : Version.precedence first second = .lt)
+    (hSecondThird : (Version.precedence second third).isLE) :
+    Version.precedence first third = .lt := by
+  have hFirstThirdLE :=
+    prereleaseCore_isLE_trans
+      first second third reference
+      hFirst hSecond hThird
+      (by simp [hFirstSecond])
+      hSecondThird
+  cases hFirstThird : Version.precedence first third with
+  | lt =>
+      rfl
+  | gt =>
+      simp [hFirstThird] at hFirstThirdLE
+  | eq =>
+      rcases hFirst with
+        ⟨hFirstPrerelease, hFirstMajor, hFirstMinor, hFirstPatch⟩
+      rcases hSecond with
+        ⟨hSecondPrerelease, hSecondMajor, hSecondMinor, hSecondPatch⟩
+      rcases hThird with
+        ⟨hThirdPrerelease, hThirdMajor, hThirdMinor, hThirdPatch⟩
+      have hSwapFirstThird :=
+        Version.precedence_prerelease_swap_of_same_core
+          first third
+          hFirstPrerelease hThirdPrerelease
+          (hFirstMajor.trans hThirdMajor.symm)
+          (hFirstMinor.trans hThirdMinor.symm)
+          (hFirstPatch.trans hThirdPatch.symm)
+      have hThirdFirstEq :
+          Version.precedence third first = .eq := by
+        cases hReverse : Version.precedence third first <;>
+          simp [hFirstThird, hReverse] at hSwapFirstThird ⊢
+      have hSecondFirstLE :=
+        prereleaseCore_isLE_trans
+          second third first reference
+          ⟨hSecondPrerelease, hSecondMajor, hSecondMinor, hSecondPatch⟩
+          ⟨hThirdPrerelease, hThirdMajor, hThirdMinor, hThirdPatch⟩
+          ⟨hFirstPrerelease, hFirstMajor, hFirstMinor, hFirstPatch⟩
+          hSecondThird
+          (by simp [hThirdFirstEq])
+      have hSwapFirstSecond :=
+        Version.precedence_prerelease_swap_of_same_core
+          first second
+          hFirstPrerelease hSecondPrerelease
+          (hFirstMajor.trans hSecondMajor.symm)
+          (hFirstMinor.trans hSecondMinor.symm)
+          (hFirstPatch.trans hSecondPatch.symm)
+      have hSecondFirstGt :
+          Version.precedence second first = .gt := by
+        cases hReverse : Version.precedence second first <;>
+          simp [hFirstSecond, hReverse] at hSwapFirstSecond ⊢
+      simp [hSecondFirstGt] at hSecondFirstLE
+
 /--
 Appending numeric zero preserves prerelease status for a prerelease bound.
 -/
