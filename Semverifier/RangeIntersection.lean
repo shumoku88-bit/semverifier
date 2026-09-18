@@ -965,12 +965,18 @@ private theorem prereleaseLowerCandidate_isLE_of_satisfies
                 have hCore' :
                     samePrereleaseCoreAs bound witness :=
                   ⟨hBoundPrerelease, hMajor, hMinor, hPatch⟩
-                simpa [
-                  prereleaseLowerCandidate,
-                  hCore',
-                  strippedBound,
-                  hReverse
-                ]
+                have hCandidate :
+                    prereleaseLowerCandidate
+                        { operator := .gte, bound := bound }
+                        witness =
+                      strippedBound bound := by
+                  simp [prereleaseLowerCandidate, hCore']
+                have hStripped :
+                    Version.precedence (strippedBound bound) witness =
+                      Version.precedence bound witness := by
+                  rfl
+                rw [hCandidate, hStripped, hReverse]
+                rfl
             | gt =>
                 have hReverse :
                     Version.precedence bound witness = .lt := by
@@ -980,12 +986,18 @@ private theorem prereleaseLowerCandidate_isLE_of_satisfies
                 have hCore' :
                     samePrereleaseCoreAs bound witness :=
                   ⟨hBoundPrerelease, hMajor, hMinor, hPatch⟩
-                simpa [
-                  prereleaseLowerCandidate,
-                  hCore',
-                  strippedBound,
-                  hReverse
-                ]
+                have hCandidate :
+                    prereleaseLowerCandidate
+                        { operator := .gte, bound := bound }
+                        witness =
+                      strippedBound bound := by
+                  simp [prereleaseLowerCandidate, hCore']
+                have hStripped :
+                    Version.precedence (strippedBound bound) witness =
+                      Version.precedence bound witness := by
+                  rfl
+                rw [hCandidate, hStripped, hReverse]
+                rfl
           · apply ordering_isLE_of_ne_gt
             simpa [prereleaseLowerCandidate, hCore] using
               prereleaseFloorAtCore_precedence_ne_gt
@@ -1017,12 +1029,18 @@ private theorem prereleaseLowerCandidate_isLE_of_satisfies
             have hCore' :
                 samePrereleaseCoreAs bound witness :=
               ⟨hBoundPrerelease, hMajor, hMinor, hPatch⟩
-            simpa [
-              prereleaseLowerCandidate,
-              hCore',
-              strippedBound,
-              hReverse
-            ]
+            have hCandidate :
+                prereleaseLowerCandidate
+                    { operator := .eq, bound := bound }
+                    witness =
+                  strippedBound bound := by
+              simp [prereleaseLowerCandidate, hCore']
+            have hStripped :
+                Version.precedence (strippedBound bound) witness =
+                  Version.precedence bound witness := by
+              rfl
+            rw [hCandidate, hStripped, hReverse]
+            rfl
           · apply ordering_isLE_of_ne_gt
             simpa [prereleaseLowerCandidate, hCore] using
               prereleaseFloorAtCore_precedence_ne_gt
