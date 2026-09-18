@@ -12,3 +12,7 @@ lean_exe semverifierConformanceCorpus where
 
 lean_exe semverifierIntersectionProbe where
   root := `Semverifier.Conformance.IntersectionMain
+
+
+lean_exe semverifierIntersectionCoverage where
+  root := `Semverifier.Conformance.IntersectionCoverageMain
