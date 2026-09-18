@@ -117,6 +117,221 @@ private def stableFloorCandidate (comparator : Comparator) : Version :=
         stableAtCore comparator.bound
 
 /--
+If semantic precedence does not place `right` below `left`, the core of
+`left` is no greater than the core of `right`.
+
+This forgets prerelease ordering exactly when only the stable core order is
+needed.
+-/
+private theorem stableCoreLE_of_precedence_ne_lt
+    (left right : Version)
+    (hPrecedence : Version.precedence right left ≠ .lt) :
+    stableCoreLE left right := by
+  cases hMajor : compare right.major left.major with
+  | lt =>
+      simp [
+        Version.precedence,
+        Version.precedenceKey,
+        PrecedenceKey.ordering,
+        hMajor
+      ] at hPrecedence
+  | eq =>
+      have hMajorEq : right.major = left.major :=
+        Nat.compare_eq_eq.mp hMajor
+      cases hMinor : compare right.minor left.minor with
+      | lt =>
+          simp [
+            Version.precedence,
+            Version.precedenceKey,
+            PrecedenceKey.ordering,
+            hMajor,
+            hMinor
+          ] at hPrecedence
+      | eq =>
+          have hMinorEq : right.minor = left.minor :=
+            Nat.compare_eq_eq.mp hMinor
+          cases hPatch : compare right.patch left.patch with
+          | lt =>
+              simp [
+                Version.precedence,
+                Version.precedenceKey,
+                PrecedenceKey.ordering,
+                hMajor,
+                hMinor,
+                hPatch
+              ] at hPrecedence
+          | eq =>
+              have hPatchEq : right.patch = left.patch :=
+                Nat.compare_eq_eq.mp hPatch
+              unfold stableCoreLE
+              omega
+          | gt =>
+              have hPatchGt : left.patch < right.patch :=
+                Nat.compare_eq_gt.mp hPatch
+              unfold stableCoreLE
+              omega
+      | gt =>
+          have hMinorGt : left.minor < right.minor :=
+            Nat.compare_eq_gt.mp hMinor
+          unfold stableCoreLE
+          omega
+  | gt =>
+      have hMajorGt : left.major < right.major :=
+        Nat.compare_eq_gt.mp hMajor
+      unfold stableCoreLE
+      omega
+
+/--
+A strict comparison above a stable bound must advance far enough in core order
+to reach at least the next stable patch.
+-/
+private theorem nextStablePatch_core_le_of_precedence_gt_of_stable_bound
+    (bound candidate : Version)
+    (hBoundStable : bound.prerelease.isEmpty = true)
+    (hPrecedence : Version.precedence candidate bound = .gt) :
+    stableCoreLE (nextStablePatch bound) candidate := by
+  have hBoundPrerelease : bound.prerelease = [] := by
+    cases hPrerelease : bound.prerelease with
+    | nil =>
+        rfl
+    | cons head tail =>
+        simp [hPrerelease] at hBoundStable
+  cases hMajor : compare candidate.major bound.major with
+  | lt =>
+      simp [
+        Version.precedence,
+        Version.precedenceKey,
+        PrecedenceKey.ordering,
+        hMajor
+      ] at hPrecedence
+  | eq =>
+      have hMajorEq : candidate.major = bound.major :=
+        Nat.compare_eq_eq.mp hMajor
+      cases hMinor : compare candidate.minor bound.minor with
+      | lt =>
+          simp [
+            Version.precedence,
+            Version.precedenceKey,
+            PrecedenceKey.ordering,
+            hMajor,
+            hMinor
+          ] at hPrecedence
+      | eq =>
+          have hMinorEq : candidate.minor = bound.minor :=
+            Nat.compare_eq_eq.mp hMinor
+          cases hPatch : compare candidate.patch bound.patch with
+          | lt =>
+              simp [
+                Version.precedence,
+                Version.precedenceKey,
+                PrecedenceKey.ordering,
+                hMajor,
+                hMinor,
+                hPatch
+              ] at hPrecedence
+          | eq =>
+              have hPatchEq : candidate.patch = bound.patch :=
+                Nat.compare_eq_eq.mp hPatch
+              cases hCandidatePrerelease : candidate.prerelease with
+              | nil =>
+                  have hEqPrecedence :
+                      Version.precedence candidate bound = .eq := by
+                    simp only [
+                      Version.precedence,
+                      Version.precedenceKey,
+                      PrecedenceKey.ordering
+                    ]
+                    rw [hMajor, hMinor, hPatch]
+                    rw [hCandidatePrerelease, hBoundPrerelease]
+                    rfl
+                  rw [hEqPrecedence] at hPrecedence
+                  contradiction
+              | cons head tail =>
+                  have hLtPrecedence :
+                      Version.precedence candidate bound = .lt := by
+                    simp only [
+                      Version.precedence,
+                      Version.precedenceKey,
+                      PrecedenceKey.ordering
+                    ]
+                    rw [hMajor, hMinor, hPatch]
+                    rw [hCandidatePrerelease, hBoundPrerelease]
+                    rfl
+                  rw [hLtPrecedence] at hPrecedence
+                  contradiction
+          | gt =>
+              have hPatchGt : bound.patch < candidate.patch :=
+                Nat.compare_eq_gt.mp hPatch
+              simp only [stableCoreLE, nextStablePatch]
+              omega
+      | gt =>
+          have hMinorGt : bound.minor < candidate.minor :=
+            Nat.compare_eq_gt.mp hMinor
+          simp only [stableCoreLE, nextStablePatch]
+          omega
+  | gt =>
+      have hMajorGt : bound.major < candidate.major :=
+        Nat.compare_eq_gt.mp hMajor
+      simp only [stableCoreLE, nextStablePatch]
+      omega
+
+/--
+Any candidate satisfying a primitive comparator lies at or above that
+comparator's canonical stable floor in core order.
+-/
+private theorem stableFloorCandidate_core_le_of_satisfies
+    (comparator : Comparator)
+    (candidate : Version)
+    (hSatisfies : comparator.satisfies candidate = true) :
+    stableCoreLE (stableFloorCandidate comparator) candidate := by
+  cases comparator with
+  | mk operator bound =>
+      cases operator with
+      | lt =>
+          simpa [stableFloorCandidate] using
+            minimumStable_core_le candidate
+      | lte =>
+          simpa [stableFloorCandidate] using
+            minimumStable_core_le candidate
+      | gte =>
+          have hNotLt : Version.precedence candidate bound ≠ .lt := by
+            intro hLt
+            simp [Comparator.satisfies, hLt] at hSatisfies
+          simpa [stableFloorCandidate, stableAtCore, stableCoreLE] using
+            stableCoreLE_of_precedence_ne_lt bound candidate hNotLt
+      | eq =>
+          have hNotLt : Version.precedence candidate bound ≠ .lt := by
+            intro hLt
+            simp [Comparator.satisfies, hLt] at hSatisfies
+          simpa [stableFloorCandidate, stableAtCore, stableCoreLE] using
+            stableCoreLE_of_precedence_ne_lt bound candidate hNotLt
+      | gt =>
+          cases hBoundStable : bound.prerelease.isEmpty with
+          | false =>
+              have hNotLt : Version.precedence candidate bound ≠ .lt := by
+                intro hLt
+                simp [Comparator.satisfies, hLt] at hSatisfies
+              simpa [
+                stableFloorCandidate,
+                hBoundStable,
+                stableAtCore,
+                stableCoreLE
+              ] using
+                stableCoreLE_of_precedence_ne_lt bound candidate hNotLt
+          | true =>
+              have hGt : Version.precedence candidate bound = .gt := by
+                cases hPrecedence : Version.precedence candidate bound with
+                | lt =>
+                    simp [Comparator.satisfies, hPrecedence] at hSatisfies
+                | eq =>
+                    simp [Comparator.satisfies, hPrecedence] at hSatisfies
+                | gt =>
+                    rfl
+              simpa [stableFloorCandidate, hBoundStable] using
+                nextStablePatch_core_le_of_precedence_gt_of_stable_bound
+                  bound candidate hBoundStable hGt
+
+/--
 The canonical stable floor never carries prerelease identifiers.
 -/
 private theorem stableFloorCandidate_is_stable
