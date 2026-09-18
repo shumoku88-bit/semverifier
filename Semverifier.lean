@@ -15,8 +15,8 @@ Comparator / ComparatorSet semantics.
 Range algebra is specified extensionally over satisfaction sets:
 intersection means a common accepted version exists, subset means every
 accepted version on the left is accepted on the right, and equivalence means
-both ranges accept exactly the same versions. Executable search is layered on top of these meanings. The first intersection
-search returns concrete witnesses and proves returned witnesses sound; a
-completeness proof is still required before absence of a witness may be treated
-as a disjointness decision.
+both ranges accept exactly the same versions. Executable search is layered on
+top of these meanings. The finite intersection witness search is proved sound
+and complete for the modeled semantics: every semantic intersection produces a
+returned witness, and returning `none` is equivalent to semantic disjointness.
 -/
