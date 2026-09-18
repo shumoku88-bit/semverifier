@@ -32,7 +32,7 @@ The first milestone models:
 - SemVer precedence;
 - examples from the SemVer precedence rules.
 
-Primitive comparator parsing and satisfaction (`< <= > >= =`) are now part of the kernel. Comparator-set conjunction and default pre-release admission are also modeled. The parser accepts complete SemVer bounds only.
+Primitive comparator parsing and satisfaction (`< <= > >= =`) are now part of the kernel. Whitespace-separated comparator sets, conjunction, and default pre-release admission are also modeled. Primitive comparator bounds must still be complete SemVer versions.
 
 Range union (`||`) and advanced syntax such as `^1.2.3`, `~1.2`,
 wildcards, and hyphen ranges remain intentionally out of scope until the
