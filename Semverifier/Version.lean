@@ -1,27 +1,6 @@
+import Semverifier.Identifier
+
 namespace Semverifier
-
-/--
-A pre-release identifier after syntax validation.
-
-Numeric and non-numeric identifiers are separated here because SemVer assigns
-different precedence rules to them. Parsing and textual validation belong to a
-later boundary.
--/
-inductive PrereleaseIdentifier where
-  | numeric (value : Nat)
-  | text (value : String)
-deriving Repr, BEq, DecidableEq
-
-namespace PrereleaseIdentifier
-
-/-- SemVer precedence for one validated pre-release identifier. -/
-def precedence : PrereleaseIdentifier → PrereleaseIdentifier → Ordering
-  | .numeric left, .numeric right => compare left right
-  | .numeric _, .text _ => .lt
-  | .text _, .numeric _ => .gt
-  | .text left, .text right => compare left right
-
-end PrereleaseIdentifier
 
 /--
 A semantic version after syntax validation.

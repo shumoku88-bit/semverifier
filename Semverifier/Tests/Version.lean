@@ -12,7 +12,7 @@ private def pre (ids : List PrereleaseIdentifier) : Version :=
   { major := 1, minor := 0, patch := 0, prerelease := ids }
 
 private def text (value : String) : PrereleaseIdentifier :=
-  .text value
+  (PrereleaseIdentifier.parse? value).getD (.numeric 0)
 
 private def numeric (value : Nat) : PrereleaseIdentifier :=
   .numeric value
