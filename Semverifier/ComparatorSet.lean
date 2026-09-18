@@ -72,5 +72,37 @@ theorem satisfies_eq_true_iff
       set.prereleaseAdmitted candidate = true := by
   simp [satisfies]
 
+/--
+Stable candidates are admitted by every comparator set.
+
+The node-semver prerelease gate is therefore irrelevant in the stable branch
+of the intersection-completeness proof.
+-/
+theorem prereleaseAdmitted_of_stable
+    (set : ComparatorSet)
+    (candidate : Version)
+    (hStable : candidate.prerelease.isEmpty = true) :
+    set.prereleaseAdmitted candidate = true := by
+  simp [prereleaseAdmitted, hStable]
+
+/--
+For a stable candidate, comparator-set satisfaction is exactly conjunction of
+its primitive comparator constraints.
+-/
+theorem satisfies_eq_true_iff_stable
+    (set : ComparatorSet)
+    (candidate : Version)
+    (hStable : candidate.prerelease.isEmpty = true) :
+    set.satisfies candidate = true ↔
+      ∀ comparator ∈ set.comparators,
+        comparator.satisfies candidate = true := by
+  constructor
+  · intro h
+    exact ((satisfies_eq_true_iff set candidate).mp h).1
+  · intro hComparators
+    exact
+      (satisfies_eq_true_iff set candidate).mpr
+        ⟨hComparators, prereleaseAdmitted_of_stable set candidate hStable⟩
+
 end ComparatorSet
 end Semverifier
