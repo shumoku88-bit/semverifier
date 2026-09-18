@@ -190,8 +190,12 @@ private theorem nextStablePatch_core_le_of_precedence_gt_of_stable_bound
     (hBoundStable : bound.prerelease.isEmpty = true)
     (hPrecedence : Version.precedence candidate bound = .gt) :
     stableCoreLE (nextStablePatch bound) candidate := by
-  have hBoundPrerelease : bound.prerelease = [] :=
-    List.isEmpty_eq_true.mp hBoundStable
+  have hBoundPrerelease : bound.prerelease = [] := by
+    cases hPrerelease : bound.prerelease with
+    | nil =>
+        exact hPrerelease
+    | cons head tail =>
+        simp [hPrerelease] at hBoundStable
   cases hMajor : compare candidate.major bound.major with
   | lt =>
       simp [
@@ -230,41 +234,45 @@ private theorem nextStablePatch_core_le_of_precedence_gt_of_stable_bound
                 Nat.compare_eq_eq.mp hPatch
               cases hCandidatePrerelease : candidate.prerelease with
               | nil =>
-                  simp [
-                    Version.precedence,
-                    Version.precedenceKey,
-                    PrecedenceKey.ordering,
-                    hMajor,
-                    hMinor,
-                    hPatch,
-                    hBoundPrerelease,
-                    hCandidatePrerelease
-                  ] at hPrecedence
+                  have hEqPrecedence :
+                      Version.precedence candidate bound = .eq := by
+                    simp only [
+                      Version.precedence,
+                      Version.precedenceKey,
+                      PrecedenceKey.ordering
+                    ]
+                    rw [hMajor, hMinor, hPatch]
+                    rw [hCandidatePrerelease, hBoundPrerelease]
+                    rfl
+                  rw [hEqPrecedence] at hPrecedence
+                  contradiction
               | cons head tail =>
-                  simp [
-                    Version.precedence,
-                    Version.precedenceKey,
-                    PrecedenceKey.ordering,
-                    hMajor,
-                    hMinor,
-                    hPatch,
-                    hBoundPrerelease,
-                    hCandidatePrerelease
-                  ] at hPrecedence
+                  have hLtPrecedence :
+                      Version.precedence candidate bound = .lt := by
+                    simp only [
+                      Version.precedence,
+                      Version.precedenceKey,
+                      PrecedenceKey.ordering
+                    ]
+                    rw [hMajor, hMinor, hPatch]
+                    rw [hCandidatePrerelease, hBoundPrerelease]
+                    rfl
+                  rw [hLtPrecedence] at hPrecedence
+                  contradiction
           | gt =>
               have hPatchGt : bound.patch < candidate.patch :=
                 Nat.compare_eq_gt.mp hPatch
-              unfold stableCoreLE nextStablePatch
+              simp only [stableCoreLE, nextStablePatch]
               omega
       | gt =>
           have hMinorGt : bound.minor < candidate.minor :=
             Nat.compare_eq_gt.mp hMinor
-          unfold stableCoreLE nextStablePatch
+          simp only [stableCoreLE, nextStablePatch]
           omega
   | gt =>
       have hMajorGt : bound.major < candidate.major :=
         Nat.compare_eq_gt.mp hMajor
-      unfold stableCoreLE nextStablePatch
+      simp only [stableCoreLE, nextStablePatch]
       omega
 
 /--
@@ -318,7 +326,7 @@ private theorem stableFloorCandidate_core_le_of_satisfies
                 | eq =>
                     simp [Comparator.satisfies, hPrecedence] at hSatisfies
                 | gt =>
-                    exact hPrecedence
+                    rfl
               simpa [stableFloorCandidate, hBoundStable] using
                 nextStablePatch_core_le_of_precedence_gt_of_stable_bound
                   bound candidate hBoundStable hGt
