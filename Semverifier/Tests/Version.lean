@@ -5,6 +5,9 @@ open Semverifier
 private def release : Version :=
   { major := 1, minor := 0, patch := 0 }
 
+private def releaseWithBuild (build : List String) : Version :=
+  { release with build := build }
+
 private def pre (ids : List PrereleaseIdentifier) : Version :=
   { major := 1, minor := 0, patch := 0, prerelease := ids }
 
@@ -38,8 +41,17 @@ example : Version.precedence (pre [text "beta", numeric 11]) (pre [text "rc", nu
 example : Version.precedence (pre [text "rc", numeric 1]) release = .lt := by
   decide
 
+-- Version identity and precedence are deliberately different.
+example : releaseWithBuild ["left"] ≠ releaseWithBuild ["right"] := by
+  decide
+
 example :
     Version.precedence
-      { release with build := ["left"] }
-      { release with build := ["right"] } = .eq := by
+      (releaseWithBuild ["left"])
+      (releaseWithBuild ["right"]) = .eq := by
+  decide
+
+example :
+    Version.precedenceKey (releaseWithBuild ["left"]) =
+      Version.precedenceKey (releaseWithBuild ["right"]) := by
   decide
