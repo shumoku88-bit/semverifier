@@ -40,3 +40,8 @@ jobs:
           lake env lean Semverifier/Tests/RangeCaret.lean
           lake env lean Semverifier/Tests/Tilde.lean
           lake env lean Semverifier/Tests/RangeTilde.lean
+
+      - name: Install node-semver reference
+        run: npm install --no-save --ignore-scripts semver@7.8.5
+      - name: Differential conformance against node-semver
+        run: node tools/conformance/node-semver.js
