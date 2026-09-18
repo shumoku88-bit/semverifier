@@ -1,0 +1,149 @@
+import Semverifier.RangeAlgebra
+
+namespace Semverifier
+
+namespace Range
+
+private def minimumStable : Version :=
+  { major := 0, minor := 0, patch := 0 }
+
+private def stableAtCore (version : Version) : Version :=
+  {
+    major := version.major
+    minor := version.minor
+    patch := version.patch
+  }
+
+private def nextStablePatch (version : Version) : Version :=
+  {
+    major := version.major
+    minor := version.minor
+    patch := version.patch + 1
+  }
+
+private def prereleaseFloorAtCore (version : Version) : Version :=
+  {
+    major := version.major
+    minor := version.minor
+    patch := version.patch
+    prerelease := [.numeric 0]
+  }
+
+private def strippedBound (version : Version) : Version :=
+  { version with build := [] }
+
+private def prereleaseSuccessor (version : Version) : Version :=
+  {
+    strippedBound version with
+    prerelease := version.prerelease ++ [.numeric 0]
+  }
+
+/--
+Finite boundary candidates contributed by one primitive comparator.
+
+Stable candidates include the release at the bound's core and the next patch
+release. A prerelease bound additionally contributes the lowest prerelease at
+that core, the bound itself, and the immediate prefix extension obtained by
+appending numeric zero.
+
+The list may contain duplicates. Keeping generation simple is more important
+than deduplication at this stage.
+-/
+private def boundaryCandidates (comparator : Comparator) : List Version :=
+  let bound := comparator.bound
+  let stable := stableAtCore bound
+  let nextStable := nextStablePatch bound
+  if bound.prerelease.isEmpty then
+    [stable, nextStable]
+  else
+    [
+      stable,
+      nextStable,
+      prereleaseFloorAtCore bound,
+      strippedBound bound,
+      prereleaseSuccessor bound
+    ]
+
+private def comparatorSetCandidates (set : ComparatorSet) : List Version :=
+  set.comparators.flatMap boundaryCandidates
+
+private def rangeBoundaryCandidates (range : Range) : List Version :=
+  range.sets.flatMap comparatorSetCandidates
+
+/--
+Finite candidate pool used by the first intersection witness search.
+
+This pool is deliberately exposed for inspection. At this stage Semverifier
+proves only soundness of returned witnesses; completeness of this finite pool
+is a separate theorem still to be established.
+-/
+def intersectionCandidates (left right : Range) : List Version :=
+  minimumStable ::
+    (rangeBoundaryCandidates left ++ rangeBoundaryCandidates right)
+
+private def firstOverlap?
+    (left right : Range) :
+    List Version → Option Version
+  | [] => none
+  | candidate :: rest =>
+      if overlapsAt left right candidate then
+        some candidate
+      else
+        firstOverlap? left right rest
+
+/--
+Search the finite critical-boundary pool for a concrete intersection witness.
+
+A returned version is proved sound below. Returning `none` does not yet mean
+that the ranges are disjoint; that conclusion waits for a completeness proof
+for `intersectionCandidates`.
+-/
+def findIntersectionWitness? (left right : Range) : Option Version :=
+  firstOverlap? left right (intersectionCandidates left right)
+
+private theorem firstOverlap?_sound
+    (left right : Range)
+    (candidates : List Version)
+    (candidate : Version)
+    (h : firstOverlap? left right candidates = some candidate) :
+    overlapsAt left right candidate = true := by
+  induction candidates with
+  | nil =>
+      simp [firstOverlap?] at h
+  | cons head tail ih =>
+      by_cases hOverlap : overlapsAt left right head = true
+      · simp [firstOverlap?, hOverlap] at h
+        subst candidate
+        exact hOverlap
+      · have hFalse : overlapsAt left right head = false := by
+          cases hValue : overlapsAt left right head <;> simp_all
+        simp [firstOverlap?, hFalse] at h
+        exact ih h
+
+/-- Any returned witness is accepted by both ranges. -/
+theorem findIntersectionWitness?_overlaps
+    (left right : Range)
+    (candidate : Version)
+    (h : findIntersectionWitness? left right = some candidate) :
+    overlapsAt left right candidate = true := by
+  exact firstOverlap?_sound
+    left
+    right
+    (intersectionCandidates left right)
+    candidate
+    h
+
+/-- Any returned witness proves semantic intersection. -/
+theorem findIntersectionWitness?_sound
+    (left right : Range)
+    (candidate : Version)
+    (h : findIntersectionWitness? left right = some candidate) :
+    Intersects left right := by
+  have hOverlap :=
+    findIntersectionWitness?_overlaps left right candidate h
+  have hBoth :=
+    (overlapsAt_eq_true_iff left right candidate).mp hOverlap
+  exact ⟨candidate, hBoth.1, hBoth.2⟩
+
+end Range
+end Semverifier
