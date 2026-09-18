@@ -1558,7 +1558,7 @@ private theorem comparator_satisfies_prerelease_sandwich
                     simp [prereleaseLowerCandidate, hBoundCore]
                   rw [hLower] at hFloorCandidate
                   rw [strippedBound_precedence_left bound candidate] at hFloorCandidate
-                exact hFloorCandidate
+                  exact hFloorCandidate
                 have hSwap :=
                   prereleaseCore_swap
                     candidate bound witness
@@ -1620,7 +1620,7 @@ private theorem comparator_satisfies_prerelease_sandwich
               simp [prereleaseLowerCandidate, hBoundCore]
             rw [hLower] at hFloorCandidate
             rw [strippedBound_precedence_left bound candidate] at hFloorCandidate
-                exact hFloorCandidate
+            exact hFloorCandidate
           have hCandidateEq :=
             prereleaseCore_eq_of_isLE_of_reverse_isLE
               candidate bound witness
