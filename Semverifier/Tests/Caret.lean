@@ -77,11 +77,97 @@ example :
       (version "1.2.3+other") = true := by
   native_decide
 
--- Partial-version caret syntax remains deliberately out of scope.
-example : Caret.parse? "^1.2" = none := by
+-- Partial caret boundaries preserve omission information.
+example :
+    Caret.parse? "^1.2" =
+      some {
+        comparators := [
+          { operator := .gte, bound := version "1.2.0" },
+          { operator := .lt, bound := version "2.0.0-0" }
+        ]
+      } := by
   native_decide
 
-example : Caret.parse? "^1" = none := by
+example :
+    Caret.parse? "^0.2" =
+      some {
+        comparators := [
+          { operator := .gte, bound := version "0.2.0" },
+          { operator := .lt, bound := version "0.3.0-0" }
+        ]
+      } := by
+  native_decide
+
+example :
+    Caret.parse? "^0.0" =
+      some {
+        comparators := [
+          { operator := .gte, bound := version "0.0.0" },
+          { operator := .lt, bound := version "0.1.0-0" }
+        ]
+      } := by
+  native_decide
+
+example :
+    Caret.parse? "^0" =
+      some {
+        comparators := [
+          { operator := .gte, bound := version "0.0.0" },
+          { operator := .lt, bound := version "1.0.0-0" }
+        ]
+      } := by
+  native_decide
+
+example : Caret.parse? "^1.2.x" = Caret.parse? "^1.2" := by
+  native_decide
+
+example : Caret.parse? "^0.0.x" = Caret.parse? "^0.0" := by
+  native_decide
+
+example : Caret.parse? "^1.x" = Caret.parse? "^1" := by
+  native_decide
+
+example : Caret.parse? "^*" = some XRange.any := by
+  native_decide
+
+example :
+    (caret "^1.2").satisfies (version "1.9.9") = true := by
+  native_decide
+
+example :
+    (caret "^1.2").satisfies (version "2.0.0") = false := by
+  native_decide
+
+example :
+    (caret "^0.2").satisfies (version "0.2.99") = true := by
+  native_decide
+
+example :
+    (caret "^0.2").satisfies (version "0.3.0") = false := by
+  native_decide
+
+example :
+    (caret "^0.0").satisfies (version "0.0.99") = true := by
+  native_decide
+
+example :
+    (caret "^0.0").satisfies (version "0.1.0") = false := by
+  native_decide
+
+example :
+    (caret "^0").satisfies (version "0.9.9") = true := by
+  native_decide
+
+example :
+    (caret "^0").satisfies (version "1.0.0") = false := by
+  native_decide
+
+example :
+    (caret "^*").satisfies (version "9.9.9") = true := by
+  native_decide
+
+example :
+    (caret "^*").satisfies (version "9.9.9-alpha") = false := by
   native_decide
 
 example : Caret.parse? "1.2.3" = none := by
