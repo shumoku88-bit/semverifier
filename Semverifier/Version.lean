@@ -64,6 +64,72 @@ def ordering (left right : PrecedenceKey) : Ordering :=
           | .gt => .gt
           | .eq => releasePrecedence left.prerelease right.prerelease
 
+/--
+The prerelease list `[0]` is never greater than any non-empty prerelease
+list at the same major/minor/patch core.
+-/
+theorem ordering_prerelease_zero_ne_gt
+    (major minor patch : Nat)
+    (prerelease : List PrereleaseIdentifier)
+    (hPrerelease : prerelease.isEmpty = false) :
+    ordering
+        {
+          major := major
+          minor := minor
+          patch := patch
+          prerelease := [.numeric 0]
+        }
+        {
+          major := major
+          minor := minor
+          patch := patch
+          prerelease := prerelease
+        } ≠ .gt := by
+  cases hList : prerelease with
+  | nil =>
+      simp [hList] at hPrerelease
+  | cons head tail =>
+      cases head with
+      | numeric value =>
+          cases value with
+          | zero =>
+              cases tail with
+              | nil =>
+                  simp [
+                    ordering,
+                    releasePrecedence,
+                    prereleasePrecedence,
+                    PrereleaseIdentifier.precedence,
+                    hList
+                  ]
+              | cons next rest =>
+                  simp [
+                    ordering,
+                    releasePrecedence,
+                    prereleasePrecedence,
+                    PrereleaseIdentifier.precedence,
+                    hList
+                  ]
+          | succ value =>
+              have hCompare :
+                  compare 0 (Nat.succ value) = .lt :=
+                Nat.compare_eq_lt.mpr (Nat.zero_lt_succ value)
+              simp [
+                ordering,
+                releasePrecedence,
+                prereleasePrecedence,
+                PrereleaseIdentifier.precedence,
+                hCompare
+              ]
+      | text value =>
+          simp [
+            ordering,
+            releasePrecedence,
+            prereleasePrecedence,
+            PrereleaseIdentifier.precedence,
+            hList
+          ]
+
 instance : Ord PrecedenceKey where
   compare := ordering
 

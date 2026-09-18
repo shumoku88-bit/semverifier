@@ -483,6 +483,26 @@ private theorem prereleaseFloorAtCore_is_prerelease
   simp [prereleaseFloorAtCore]
 
 /--
+The canonical `-0` prerelease floor never lies above a prerelease version on
+the same core.
+-/
+private theorem prereleaseFloorAtCore_precedence_ne_gt
+    (version : Version)
+    (hPrerelease : version.prerelease.isEmpty = false) :
+    Version.precedence (prereleaseFloorAtCore version) version ≠ .gt := by
+  simpa [
+    Version.precedence,
+    Version.precedenceKey,
+    prereleaseFloorAtCore
+  ] using
+    PrecedenceKey.ordering_prerelease_zero_ne_gt
+      version.major
+      version.minor
+      version.patch
+      version.prerelease
+      hPrerelease
+
+/--
 A prerelease comparator bound contributes the prerelease floor at its core to
 the existing critical-boundary pool.
 -/
