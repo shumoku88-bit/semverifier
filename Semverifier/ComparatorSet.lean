@@ -104,5 +104,47 @@ theorem satisfies_eq_true_iff_stable
       (satisfies_eq_true_iff set candidate).mpr
         ⟨hComparators, prereleaseAdmitted_of_stable set candidate hStable⟩
 
+/--
+For a prerelease candidate, set-local admission is exactly the existence of a
+prerelease comparator bound with the same major/minor/patch core.
+-/
+theorem prereleaseAdmitted_eq_true_iff_of_prerelease
+    (set : ComparatorSet)
+    (candidate : Version)
+    (hPrerelease : candidate.prerelease.isEmpty = false) :
+    set.prereleaseAdmitted candidate = true ↔
+      ∃ comparator ∈ set.comparators,
+        comparator.bound.prerelease.isEmpty = false ∧
+        comparator.bound.major = candidate.major ∧
+        comparator.bound.minor = candidate.minor ∧
+        comparator.bound.patch = candidate.patch := by
+  simp [
+    prereleaseAdmitted,
+    hPrerelease,
+    sameCore,
+    Bool.not_eq_true
+  ]
+
+/--
+Any prerelease version accepted by a comparator set carries a concrete
+same-core prerelease admission anchor inside that set.
+-/
+theorem exists_prerelease_anchor_of_satisfies
+    (set : ComparatorSet)
+    (candidate : Version)
+    (hPrerelease : candidate.prerelease.isEmpty = false)
+    (hSatisfies : set.satisfies candidate = true) :
+    ∃ comparator ∈ set.comparators,
+      comparator.bound.prerelease.isEmpty = false ∧
+      comparator.bound.major = candidate.major ∧
+      comparator.bound.minor = candidate.minor ∧
+      comparator.bound.patch = candidate.patch := by
+  have hAdmitted :
+      set.prereleaseAdmitted candidate = true :=
+    ((satisfies_eq_true_iff set candidate).mp hSatisfies).2
+  exact
+    (prereleaseAdmitted_eq_true_iff_of_prerelease
+      set candidate hPrerelease).mp hAdmitted
+
 end ComparatorSet
 end Semverifier
