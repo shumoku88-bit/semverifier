@@ -144,7 +144,8 @@ private theorem comparatorSetCandidate_mem_rangeCandidates_left
     (candidate : Version)
     (hCandidate : candidate ∈ comparatorSetCandidates set) :
     candidate ∈ rangeBoundaryCandidates range := by
-  simp [rangeBoundaryCandidates, List.mem_flatMap, hSet, hCandidate]
+  simp only [rangeBoundaryCandidates, List.mem_flatMap]
+  exact ⟨set, hSet, hCandidate⟩
 
 private theorem comparatorSetCandidate_mem_rangeCandidates_right
     (range : Range)
