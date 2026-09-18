@@ -93,9 +93,9 @@ private theorem stableFloorCandidate_eq_minimum_or_mem_boundary
       stableFloorCandidate comparator ∈ boundaryCandidates comparator := by
   cases comparator with
   | mk operator bound =>
-      cases operator <;>
-        simp [stableFloorCandidate, boundaryCandidates]
-      split <;> simp_all [stableFloorCandidate, boundaryCandidates]
+      cases hPrerelease : bound.prerelease.isEmpty <;>
+        cases operator <;>
+          simp [stableFloorCandidate, boundaryCandidates, hPrerelease]
 
 private def comparatorSetCandidates (set : ComparatorSet) : List Version :=
   set.comparators.flatMap boundaryCandidates
