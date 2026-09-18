@@ -51,3 +51,14 @@ Keep the semantic kernel smaller than the problem surrounding it.
 
 If a property can be expressed once in the model and derived downstream, do
 not duplicate it as defensive convention.
+
+## Differential conformance
+
+The supported subset is checked differentially against node-semver 7.8.5 in CI.
+
+A Lean executable generates a deterministic matrix of supported ranges and
+versions, evaluates every pair with Semverifier, and a small Node adapter checks
+the same judgments with `semver.satisfies`. Any disagreement fails CI.
+
+This harness is intentionally outside the semantic kernel: node-semver is a
+reference implementation under test, not a dependency of Semverifier itself.
