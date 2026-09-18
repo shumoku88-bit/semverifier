@@ -224,7 +224,7 @@ theorem findIntersectionWitness?_none_iff_not_intersects
   · intro hNotIntersects
     cases hSearch : findIntersectionWitness? left right with
     | none =>
-        exact hSearch
+        rfl
     | some candidate =>
         have hIntersects :=
           findIntersectionWitness?_sound left right candidate hSearch
