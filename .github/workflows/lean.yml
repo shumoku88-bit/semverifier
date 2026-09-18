@@ -36,6 +36,7 @@ jobs:
           lake env lean Semverifier/Tests/ComparatorSetParser.lean
           lake env lean Semverifier/Tests/Range.lean
           lake env lean Semverifier/Tests/RangeAlgebra.lean
+          lake env lean Semverifier/Tests/RangeIntersection.lean
           lake env lean Semverifier/Tests/Caret.lean
           lake env lean Semverifier/Tests/RangeCaret.lean
           lake env lean Semverifier/Tests/Tilde.lean
