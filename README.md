@@ -12,7 +12,7 @@ SemVer version precedence: given two versions, which one has higher precedence?
 Version
   -> precedence
   -> Comparator satisfaction
-  -> Range
+  -> Range (union of comparator sets)
   -> contains
   -> intersects / subset / equivalence
   -> conformance checks against existing implementations
@@ -34,9 +34,11 @@ The first milestone models:
 
 Primitive comparator parsing and satisfaction (`< <= > >= =`) are now part of the kernel. Whitespace-separated comparator sets, conjunction, and default pre-release admission are also modeled. Primitive comparator bounds must still be complete SemVer versions.
 
-Range union (`||`) and advanced syntax such as `^1.2.3`, `~1.2`,
-wildcards, and hyphen ranges remain intentionally out of scope until the
-comparator-set layer is small and clear.
+Range union (`||`) is now modeled as a union of comparator-set intersections.
+
+Advanced syntax such as `^1.2.3`, `~1.2`, wildcards, partial versions, and
+hyphen ranges remains intentionally out of scope until the core range algebra
+is small and clear.
 
 ## Design rule
 
