@@ -442,6 +442,14 @@ private def prereleaseFloorAtCore (version : Version) : Version :=
 private def strippedBound (version : Version) : Version :=
   { version with build := [] }
 
+private theorem strippedBound_precedence_left
+    (bound candidate : Version) :
+    Version.precedence (strippedBound bound) candidate =
+      Version.precedence bound candidate := by
+  simpa [strippedBound] using
+    Version.precedence_ignores_build
+      bound candidate [] candidate.build
+
 private def prereleaseSuccessor (version : Version) : Version :=
   {
     strippedBound version with
@@ -1519,7 +1527,8 @@ private theorem comparator_satisfies_prerelease_sandwich
                       strippedBound bound := by
                   simp [prereleaseLowerCandidate, hBoundCore]
                 rw [hLower] at hFloorCandidate
-                simpa [strippedBound] using hFloorCandidate
+                rw [strippedBound_precedence_left bound candidate] at hFloorCandidate
+                exact hFloorCandidate
               have hSwap :=
                 prereleaseCore_swap
                   candidate bound witness
@@ -1548,7 +1557,8 @@ private theorem comparator_satisfies_prerelease_sandwich
                         strippedBound bound := by
                     simp [prereleaseLowerCandidate, hBoundCore]
                   rw [hLower] at hFloorCandidate
-                  simpa [strippedBound] using hFloorCandidate
+                  rw [strippedBound_precedence_left bound candidate] at hFloorCandidate
+                exact hFloorCandidate
                 have hSwap :=
                   prereleaseCore_swap
                     candidate bound witness
@@ -1609,7 +1619,8 @@ private theorem comparator_satisfies_prerelease_sandwich
                   strippedBound bound := by
               simp [prereleaseLowerCandidate, hBoundCore]
             rw [hLower] at hFloorCandidate
-            simpa [strippedBound] using hFloorCandidate
+            rw [strippedBound_precedence_left bound candidate] at hFloorCandidate
+                exact hFloorCandidate
           have hCandidateEq :=
             prereleaseCore_eq_of_isLE_of_reverse_isLE
               candidate bound witness
