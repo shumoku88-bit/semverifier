@@ -4,10 +4,11 @@ Date: 2026-09-19
 
 ## Current state
 
-Latest completed intersection-completeness milestone:
+Latest completed checkpoint:
 
-- main checkpoint: `6dffc7f53c993bded6e40670711bf11c51da34f3`
-- main CI #150: success
+- main checkpoint: `7a33f6f65dc77d8d3c27c373591d9cebf18d47ed`
+- intersection completeness landed at `6dffc7f53c993bded6e40670711bf11c51da34f3`
+- main CI #152: success
 - open PRs at checkpoint: 0
 - range-syntax semantics milestone: complete
 - finite range-intersection witness search: proved sound and complete
@@ -59,6 +60,47 @@ reimplement range logic.
 After that, the next useful layer is a differential-oracle workflow that makes
 it easy to compare existing implementations against Semverifier and emit
 witness-backed counterexamples.
+
+## Before any upstream node-semver PR
+
+Do not rush into an upstream pull request after the CLI is working.
+
+Treat node-semver as the first real-world validation target for Semverifier.
+Before proposing any fix upstream, perform a careful adversarial audit and
+record the evidence in this repository.
+
+The validation sequence should be:
+
+1. Reproduce the known `Range.intersects()` false negative against the current
+   node-semver `main`, not only the published 7.8.5 release.
+2. Minimize the contradiction to the smallest useful range pair and concrete
+   witness. Check both argument orders.
+3. Reconfirm on the Semverifier side that the same case is accepted by the
+   proved search and that the relevant soundness/completeness theorems apply.
+4. Trace the current node-semver implementation to identify the root cause
+   independently. Existing upstream PR #884 is evidence to compare against,
+   not a substitute for our own analysis.
+5. Develop more than one plausible repair when useful, and compare their
+   semantic scope. Avoid a narrow special case unless evidence shows that is
+   the right boundary.
+6. Run a broad differential matrix across current node-semver, any proposed
+   repair, and Semverifier. Enumerate every changed range pair.
+7. For every new `intersects() === true` result caused by a repair, require a
+   concrete common witness. Check especially prerelease-admission cases.
+8. Check the opposite risk as well: no repair should create false positives or
+   silently alter unrelated stable-range behavior.
+9. Run node-semver's own full tests, lint, and coverage requirements on the
+   proposed repair.
+10. Re-read node-semver's current CONTRIBUTING / PR policy immediately before
+    submission, because contribution rules may change.
+
+Only after this validation is complete should we decide whether to open an
+upstream PR.
+
+The desired upstream artifact is deliberately small: a minimal reproduction,
+failing regression test, root-cause explanation, minimal justified repair, and
+a short note that an independent Lean semantic oracle also validates the case.
+Semverifier should support the claim, not overwhelm the PR.
 
 ## Explicitly not next
 
