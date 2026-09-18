@@ -32,7 +32,7 @@ The first milestone models:
 - SemVer precedence;
 - examples from the SemVer precedence rules.
 
-Primitive comparator satisfaction (`< <= > >= =`) is now part of the kernel.
+Primitive comparator parsing and satisfaction (`< <= > >= =`) are now part of the kernel. The parser accepts complete SemVer bounds only.
 
 Version-range composition such as comparator sets, `||`, `^1.2.3`, `~1.2`,
 wildcards, and npm's pre-release range admission remain intentionally out of
