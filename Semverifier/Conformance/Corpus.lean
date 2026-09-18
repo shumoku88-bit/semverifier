@@ -78,6 +78,26 @@ private def caretRanges : List String :=
     "^2.5.1"
   ]
 
+private def partialCaretRanges : List String :=
+  [
+    "^*",
+    "^x",
+    "^X",
+    "^0",
+    "^1",
+    "^2",
+    "^0.x",
+    "^1.x",
+    "^1.X",
+    "^1.*",
+    "^0.0",
+    "^0.2",
+    "^1.2",
+    "^0.0.x",
+    "^1.2.x",
+    "^2.x.x"
+  ]
+
 private def tildeRanges : List String :=
   [
     "~0.0.0",
@@ -159,6 +179,7 @@ def ranges : List String :=
     conjunctionRanges ++
     unionRanges ++
     caretRanges ++
+    partialCaretRanges ++
     tildeRanges ++
     partialTildeRanges ++
     xRanges ++
