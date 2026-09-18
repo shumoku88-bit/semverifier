@@ -2816,6 +2816,100 @@ def ComparatorSetPairPrereleasePrimitiveCandidatesComplete
         comparator.satisfies candidate = true)
 
 /--
+The finite prerelease lower-bound maximum closes the primitive-only
+comparator-set-pair obligation.
+-/
+theorem comparatorSetPairPrereleasePrimitiveCandidatesComplete
+    (left right : ComparatorSet) :
+    ComparatorSetPairPrereleasePrimitiveCandidatesComplete left right := by
+  intro witness hWitnessPrerelease hLeft hRight
+  let candidate :=
+    prereleaseLowerMaximum
+      (left.comparators ++ right.comparators)
+      witness
+  have hLeftPrimitive :=
+    ((ComparatorSet.satisfies_eq_true_iff left witness).mp hLeft).1
+  have hRightPrimitive :=
+    ((ComparatorSet.satisfies_eq_true_iff right witness).mp hRight).1
+  have hAllPrimitive :
+      ∀ comparator ∈ left.comparators ++ right.comparators,
+        comparator.satisfies witness = true := by
+    intro comparator hComparator
+    rcases List.mem_append.mp hComparator with hInLeft | hInRight
+    · exact hLeftPrimitive comparator hInLeft
+    · exact hRightPrimitive comparator hInRight
+  have hCandidateCore :
+      samePrereleaseCoreAs candidate witness := by
+    simpa [candidate] using
+      prereleaseLowerMaximum_same_core_as
+        (left.comparators ++ right.comparators)
+        witness
+  have hCandidateWitness :
+      (Version.precedence candidate witness).isLE := by
+    simpa [candidate] using
+      prereleaseLowerMaximum_isLE_witness
+        (left.comparators ++ right.comparators)
+        witness
+        hWitnessPrerelease
+        hAllPrimitive
+  have hCandidateMem :
+      candidate ∈ comparatorSetIntersectionCandidates left right := by
+    simpa [candidate] using
+      prereleaseLowerMaximum_mem_pair_candidates
+        left right witness hWitnessPrerelease hLeft
+  rcases hCandidateCore with
+    ⟨hCandidatePrerelease, hMajor, hMinor, hPatch⟩
+  refine
+    ⟨candidate,
+      hCandidateMem,
+      hCandidatePrerelease,
+      hMajor,
+      hMinor,
+      hPatch,
+      ?_,
+      ?_⟩
+  · intro comparator hComparator
+    have hInPair :
+        comparator ∈ left.comparators ++ right.comparators := by
+      simp [hComparator]
+    have hFloorCandidate :
+        (Version.precedence
+          (prereleaseLowerCandidate comparator witness)
+          candidate).isLE := by
+      simpa [candidate] using
+        prereleaseLowerCandidate_isLE_maximum_of_mem
+          (left.comparators ++ right.comparators)
+          comparator witness hInPair
+    exact
+      comparator_satisfies_prerelease_sandwich
+        comparator candidate witness
+        hWitnessPrerelease
+        ⟨hCandidatePrerelease, hMajor, hMinor, hPatch⟩
+        hFloorCandidate
+        hCandidateWitness
+        (hLeftPrimitive comparator hComparator)
+  · intro comparator hComparator
+    have hInPair :
+        comparator ∈ left.comparators ++ right.comparators := by
+      simp [hComparator]
+    have hFloorCandidate :
+        (Version.precedence
+          (prereleaseLowerCandidate comparator witness)
+          candidate).isLE := by
+      simpa [candidate] using
+        prereleaseLowerCandidate_isLE_maximum_of_mem
+          (left.comparators ++ right.comparators)
+          comparator witness hInPair
+    exact
+      comparator_satisfies_prerelease_sandwich
+        comparator candidate witness
+        hWitnessPrerelease
+        ⟨hCandidatePrerelease, hMajor, hMinor, hPatch⟩
+        hFloorCandidate
+        hCandidateWitness
+        (hRightPrimitive comparator hComparator)
+
+/--
 Once the primitive-only prerelease obligation is solved, set-local admission
 is recovered automatically from the original same-core witness.
 -/
@@ -2867,6 +2961,17 @@ theorem comparatorSetPairPrereleaseCandidatesComplete_of_primitives
       hCandidate,
       hLeftCandidate,
       hRightCandidate⟩
+
+/--
+The generated critical-boundary pool is complete for prerelease witnesses of
+one comparator-set pair.
+-/
+theorem comparatorSetPairPrereleaseCandidatesComplete
+    (left right : ComparatorSet) :
+    ComparatorSetPairPrereleaseCandidatesComplete left right :=
+  comparatorSetPairPrereleaseCandidatesComplete_of_primitives
+    left right
+    (comparatorSetPairPrereleasePrimitiveCandidatesComplete left right)
 
 /--
 The local completeness obligation splits exactly into stable and prerelease
