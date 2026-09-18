@@ -64,6 +64,59 @@ def ordering (left right : PrecedenceKey) : Ordering :=
           | .gt => .gt
           | .eq => releasePrecedence left.prerelease right.prerelease
 
+private theorem prereleasePrecedence_append_zero_gt
+    (head : PrereleaseIdentifier)
+    (tail : List PrereleaseIdentifier) :
+    prereleasePrecedence
+        ((head :: tail) ++ [.numeric 0])
+        (head :: tail) = .gt := by
+  induction tail generalizing head with
+  | nil =>
+      cases head <;>
+        simp [
+          prereleasePrecedence,
+          PrereleaseIdentifier.precedence
+        ]
+  | cons next rest ih =>
+      cases head <;>
+        simp [
+          prereleasePrecedence,
+          PrereleaseIdentifier.precedence,
+          ih
+        ]
+
+/--
+Appending numeric zero to a non-empty prerelease list produces a strictly
+higher prerelease at the same major/minor/patch core.
+-/
+theorem ordering_prerelease_append_zero_gt
+    (major minor patch : Nat)
+    (prerelease : List PrereleaseIdentifier)
+    (hPrerelease : prerelease.isEmpty = false) :
+    ordering
+        {
+          major := major
+          minor := minor
+          patch := patch
+          prerelease := prerelease ++ [.numeric 0]
+        }
+        {
+          major := major
+          minor := minor
+          patch := patch
+          prerelease := prerelease
+        } = .gt := by
+  cases hList : prerelease with
+  | nil =>
+      simp [hList] at hPrerelease
+  | cons head tail =>
+      simpa [
+        ordering,
+        releasePrecedence,
+        hList
+      ] using
+        prereleasePrecedence_append_zero_gt head tail
+
 /--
 The prerelease list `[0]` is never greater than any non-empty prerelease
 list at the same major/minor/patch core.
