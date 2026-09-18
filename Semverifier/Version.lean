@@ -64,6 +64,32 @@ private theorem prereleasePrecedence_eq_compareLex
             ]
 
 
+private theorem prereleasePrecedence_refl
+    (prerelease : List PrereleaseIdentifier) :
+    prereleasePrecedence prerelease prerelease = .eq := by
+  induction prerelease with
+  | nil =>
+      rfl
+  | cons head tail ih =>
+      have hHead :
+          PrereleaseIdentifier.precedence head head = .eq := by
+        cases head <;>
+          simp [PrereleaseIdentifier.precedence]
+      simp [prereleasePrecedence, hHead, ih]
+
+private theorem prereleasePrecedence_swap
+    (left right : List PrereleaseIdentifier) :
+    prereleasePrecedence left right =
+      (prereleasePrecedence right left).swap := by
+  rw [
+    prereleasePrecedence_eq_compareLex,
+    prereleasePrecedence_eq_compareLex
+  ]
+  exact
+    Std.TransCmp.eq_swap
+      (cmp := List.compareLex PrereleaseIdentifier.precedence)
+      left right
+
 private def releasePrecedence
     (left right : List PrereleaseIdentifier) : Ordering :=
   match left, right with
@@ -216,6 +242,57 @@ private instance prereleaseIdentifierPrecedenceTrans :
                     hFirstSecond'
                     hSecondThird'
                 simpa [PrereleaseIdentifier.precedence] using hTrans
+
+/--
+A prerelease key compares equal with itself at a fixed core.
+-/
+theorem ordering_prerelease_refl
+    (major minor patch : Nat)
+    (prerelease : List PrereleaseIdentifier) :
+    ordering
+        { major := major, minor := minor, patch := patch, prerelease := prerelease }
+        { major := major, minor := minor, patch := patch, prerelease := prerelease } =
+      .eq := by
+  simp only [ordering]
+  simp
+  cases hList : prerelease with
+  | nil =>
+      rfl
+  | cons head tail =>
+      simpa [releasePrecedence, hList] using
+        prereleasePrecedence_refl (head :: tail)
+
+/--
+SemVer prerelease ordering reverses by swapping its operands on one fixed core.
+-/
+theorem ordering_prerelease_swap
+    (major minor patch : Nat)
+    (left right : List PrereleaseIdentifier)
+    (hLeft : left.isEmpty = false)
+    (hRight : right.isEmpty = false) :
+    ordering
+        { major := major, minor := minor, patch := patch, prerelease := left }
+        { major := major, minor := minor, patch := patch, prerelease := right } =
+      (ordering
+        { major := major, minor := minor, patch := patch, prerelease := right }
+        { major := major, minor := minor, patch := patch, prerelease := left }).swap := by
+  cases hLeftList : left with
+  | nil =>
+      simp [hLeftList] at hLeft
+  | cons leftHead leftTail =>
+      cases hRightList : right with
+      | nil =>
+          simp [hRightList] at hRight
+      | cons rightHead rightTail =>
+          simpa [
+            ordering,
+            releasePrecedence,
+            hLeftList,
+            hRightList
+          ] using
+            prereleasePrecedence_swap
+              (leftHead :: leftTail)
+              (rightHead :: rightTail)
 
 /--
 The prerelease list `[0]` is never greater than any non-empty prerelease
