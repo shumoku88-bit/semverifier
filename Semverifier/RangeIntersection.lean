@@ -539,8 +539,14 @@ private theorem prereleaseCoreMax_right_isLE
           right hRightPrerelease
       simp [prereleaseCoreMax, hPrecedence, hSelf]
   | gt =>
-      cases hReverse : Version.precedence right left <;>
-        simp [hPrecedence, hReverse] at hSwap ⊢
+      have hReverse : Version.precedence right left = .lt := by
+        cases hReverse : Version.precedence right left <;>
+          simp [hPrecedence, hReverse] at hSwap ⊢
+      have hMax :
+          prereleaseCoreMax left right = left := by
+        simp [prereleaseCoreMax, hPrecedence]
+      rw [hMax]
+      simp [hReverse]
 
 private theorem prereleaseCoreMax_isLE
     (left right upper reference : Version)
