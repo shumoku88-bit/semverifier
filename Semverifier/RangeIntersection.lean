@@ -350,6 +350,36 @@ private theorem stable_bound_and_same_core_of_precedence_eq
                   rw [hExpected] at hPrecedence
                   contradiction
 
+private theorem precedence_eq_of_stable_same_core
+    (left right : Version)
+    (hLeftStable : left.prerelease.isEmpty = true)
+    (hRightStable : right.prerelease.isEmpty = true)
+    (hMajor : left.major = right.major)
+    (hMinor : left.minor = right.minor)
+    (hPatch : left.patch = right.patch) :
+    Version.precedence left right = .eq := by
+  have hLeftPrerelease :=
+    prerelease_eq_nil_of_stable left hLeftStable
+  have hRightPrerelease :=
+    prerelease_eq_nil_of_stable right hRightStable
+  have hMajorCompare :
+      compare left.major right.major = .eq :=
+    Nat.compare_eq_eq.mpr hMajor
+  have hMinorCompare :
+      compare left.minor right.minor = .eq :=
+    Nat.compare_eq_eq.mpr hMinor
+  have hPatchCompare :
+      compare left.patch right.patch = .eq :=
+    Nat.compare_eq_eq.mpr hPatch
+  simp only [
+    Version.precedence,
+    Version.precedenceKey,
+    PrecedenceKey.ordering
+  ]
+  rw [hMajorCompare, hMinorCompare, hPatchCompare]
+  rw [hLeftPrerelease, hRightPrerelease]
+  rfl
+
 private theorem minimumStable_core_le (version : Version) :
     stableCoreLE minimumStable version := by
   simp [stableCoreLE, minimumStable] <;> omega
@@ -697,6 +727,221 @@ private theorem stableFloorCandidate_core_le_of_set_satisfies
       comparator candidate hPrimitive
 
 /--
+A stable candidate between a comparator's canonical floor and an existing
+stable witness also satisfies that comparator.
+-/
+private theorem comparator_satisfies_stable_sandwich
+    (comparator : Comparator)
+    (candidate witness : Version)
+    (hCandidateStable : candidate.prerelease.isEmpty = true)
+    (hWitnessStable : witness.prerelease.isEmpty = true)
+    (hFloorCandidate :
+      stableCoreLE (stableFloorCandidate comparator) candidate)
+    (hCandidateWitness : stableCoreLE candidate witness)
+    (hWitnessSatisfies : comparator.satisfies witness = true) :
+    comparator.satisfies candidate = true := by
+  cases comparator with
+  | mk operator bound =>
+      cases operator with
+      | lt =>
+          have hWitnessLt :
+              Version.precedence witness bound = .lt := by
+            cases hPrecedence : Version.precedence witness bound with
+            | lt =>
+                rfl
+            | eq =>
+                simp [Comparator.satisfies, hPrecedence] at hWitnessSatisfies
+            | gt =>
+                simp [Comparator.satisfies, hPrecedence] at hWitnessSatisfies
+          have hWitnessCoreLt :=
+            stableCoreLT_of_precedence_lt_of_stable
+              witness bound hWitnessStable hWitnessLt
+          have hCandidateCoreLt :=
+            stableCoreLT_of_le_of_lt
+              candidate witness bound
+              hCandidateWitness hWitnessCoreLt
+          have hCandidateLt :=
+            precedence_lt_of_stableCoreLT
+              candidate bound hCandidateCoreLt
+          simp [Comparator.satisfies, hCandidateLt]
+      | lte =>
+          cases hWitnessPrecedence :
+              Version.precedence witness bound with
+          | gt =>
+              simp [
+                Comparator.satisfies,
+                hWitnessPrecedence
+              ] at hWitnessSatisfies
+          | lt =>
+              have hWitnessCoreLt :=
+                stableCoreLT_of_precedence_lt_of_stable
+                  witness bound hWitnessStable hWitnessPrecedence
+              have hCandidateCoreLt :=
+                stableCoreLT_of_le_of_lt
+                  candidate witness bound
+                  hCandidateWitness hWitnessCoreLt
+              have hCandidateLt :=
+                precedence_lt_of_stableCoreLT
+                  candidate bound hCandidateCoreLt
+              simp [Comparator.satisfies, hCandidateLt]
+          | eq =>
+              rcases
+                  stable_bound_and_same_core_of_precedence_eq
+                    witness bound hWitnessStable hWitnessPrecedence with
+                ⟨hBoundStable, hMajor, hMinor, hPatch⟩
+              have hCandidateBound :
+                  stableCoreLE candidate bound := by
+                unfold stableCoreLE at hCandidateWitness ⊢
+                omega
+              by_cases hStrict : stableCoreLT candidate bound
+              · have hCandidateLt :=
+                  precedence_lt_of_stableCoreLT
+                    candidate bound hStrict
+                simp [Comparator.satisfies, hCandidateLt]
+              · have hCandidateMajor :
+                    candidate.major = bound.major := by
+                  unfold stableCoreLE at hCandidateBound
+                  unfold stableCoreLT at hStrict
+                  omega
+                have hCandidateMinor :
+                    candidate.minor = bound.minor := by
+                  unfold stableCoreLE at hCandidateBound
+                  unfold stableCoreLT at hStrict
+                  omega
+                have hCandidatePatch :
+                    candidate.patch = bound.patch := by
+                  unfold stableCoreLE at hCandidateBound
+                  unfold stableCoreLT at hStrict
+                  omega
+                have hCandidateEq :=
+                  precedence_eq_of_stable_same_core
+                    candidate bound
+                    hCandidateStable hBoundStable
+                    hCandidateMajor hCandidateMinor hCandidatePatch
+                simp [Comparator.satisfies, hCandidateEq]
+      | gt =>
+          cases hBoundStable : bound.prerelease.isEmpty with
+          | false =>
+              have hBoundCandidate :
+                  stableCoreLE bound candidate := by
+                simpa [
+                  stableFloorCandidate,
+                  hBoundStable,
+                  stableAtCore,
+                  stableCoreLE
+                ] using hFloorCandidate
+              have hNotLt :
+                  Version.precedence candidate bound ≠ .lt := by
+                intro hLt
+                have hCandidateBoundLt :=
+                  stableCoreLT_of_precedence_lt_of_stable
+                    candidate bound hCandidateStable hLt
+                unfold stableCoreLE at hBoundCandidate
+                unfold stableCoreLT at hCandidateBoundLt
+                omega
+              cases hCandidatePrecedence :
+                  Version.precedence candidate bound with
+              | lt =>
+                  exact (hNotLt hCandidatePrecedence).elim
+              | eq =>
+                  have hBoundStableFromEq :=
+                    (stable_bound_and_same_core_of_precedence_eq
+                      candidate bound
+                      hCandidateStable hCandidatePrecedence).1
+                  simp [hBoundStable] at hBoundStableFromEq
+              | gt =>
+                  simp [
+                    Comparator.satisfies,
+                    hCandidatePrecedence
+                  ]
+          | true =>
+              have hNextCandidate :
+                  stableCoreLE (nextStablePatch bound) candidate := by
+                simpa [
+                  stableFloorCandidate,
+                  hBoundStable
+                ] using hFloorCandidate
+              have hBoundCandidateLt :
+                  stableCoreLT bound candidate := by
+                simp only [stableCoreLE, nextStablePatch] at hNextCandidate
+                unfold stableCoreLT
+                omega
+              have hCandidateGt :=
+                precedence_gt_of_stableCoreLT
+                  bound candidate hBoundCandidateLt
+              simp [Comparator.satisfies, hCandidateGt]
+      | gte =>
+          have hBoundCandidate :
+              stableCoreLE bound candidate := by
+            simpa [
+              stableFloorCandidate,
+              stableAtCore,
+              stableCoreLE
+            ] using hFloorCandidate
+          have hNotLt :
+              Version.precedence candidate bound ≠ .lt := by
+            intro hLt
+            have hCandidateBoundLt :=
+              stableCoreLT_of_precedence_lt_of_stable
+                candidate bound hCandidateStable hLt
+            unfold stableCoreLE at hBoundCandidate
+            unfold stableCoreLT at hCandidateBoundLt
+            omega
+          cases hCandidatePrecedence :
+              Version.precedence candidate bound with
+          | lt =>
+              exact (hNotLt hCandidatePrecedence).elim
+          | eq =>
+              simp [
+                Comparator.satisfies,
+                hCandidatePrecedence
+              ]
+          | gt =>
+              simp [
+                Comparator.satisfies,
+                hCandidatePrecedence
+              ]
+      | eq =>
+          have hWitnessEq :
+              Version.precedence witness bound = .eq := by
+            cases hPrecedence : Version.precedence witness bound with
+            | lt =>
+                simp [Comparator.satisfies, hPrecedence] at hWitnessSatisfies
+            | eq =>
+                rfl
+            | gt =>
+                simp [Comparator.satisfies, hPrecedence] at hWitnessSatisfies
+          rcases
+              stable_bound_and_same_core_of_precedence_eq
+                witness bound hWitnessStable hWitnessEq with
+            ⟨hBoundStable, hWitnessMajor, hWitnessMinor, hWitnessPatch⟩
+          have hBoundCandidate :
+              stableCoreLE bound candidate := by
+            simpa [
+              stableFloorCandidate,
+              stableAtCore,
+              stableCoreLE
+            ] using hFloorCandidate
+          have hCandidateMajor :
+              candidate.major = bound.major := by
+            unfold stableCoreLE at hBoundCandidate hCandidateWitness
+            omega
+          have hCandidateMinor :
+              candidate.minor = bound.minor := by
+            unfold stableCoreLE at hBoundCandidate hCandidateWitness
+            omega
+          have hCandidatePatch :
+              candidate.patch = bound.patch := by
+            unfold stableCoreLE at hBoundCandidate hCandidateWitness
+            omega
+          have hCandidateEq :=
+            precedence_eq_of_stable_same_core
+              candidate bound
+              hCandidateStable hBoundStable
+              hCandidateMajor hCandidateMinor hCandidatePatch
+          simp [Comparator.satisfies, hCandidateEq]
+
+/--
 The canonical stable floor never carries prerelease identifiers.
 -/
 private theorem stableFloorCandidate_is_stable
@@ -911,6 +1156,70 @@ private theorem stableFloorMaximum_pair_core_le_of_satisfies
       stableFloorCandidate_core_le_of_set_satisfies
         right witness hRight comparator hInRight
 
+private theorem stableFloorMaximum_pair_satisfies_of_stable_witness
+    (left right : ComparatorSet)
+    (witness : Version)
+    (hWitnessStable : witness.prerelease.isEmpty = true)
+    (hLeft : left.satisfies witness = true)
+    (hRight : right.satisfies witness = true) :
+    left.satisfies
+        (stableFloorMaximum
+          (left.comparators ++ right.comparators)) = true ∧
+      right.satisfies
+        (stableFloorMaximum
+          (left.comparators ++ right.comparators)) = true := by
+  let candidate :=
+    stableFloorMaximum
+      (left.comparators ++ right.comparators)
+  have hCandidateStable :
+      candidate.prerelease.isEmpty = true := by
+    simpa [candidate] using
+      stableFloorMaximum_pair_is_stable left right
+  have hCandidateWitness :
+      stableCoreLE candidate witness := by
+    simpa [candidate] using
+      stableFloorMaximum_pair_core_le_of_satisfies
+        left right witness hLeft hRight
+  constructor
+  · apply
+      (ComparatorSet.satisfies_eq_true_iff_stable
+        left candidate hCandidateStable).mpr
+    intro comparator hComparator
+    have hInPair :
+        comparator ∈ left.comparators ++ right.comparators := by
+      simp [hComparator]
+    have hFloorCandidate :=
+      stableFloorCandidate_core_le_maximum_of_mem
+        (left.comparators ++ right.comparators)
+        comparator hInPair
+    have hWitnessPrimitive :=
+      ((ComparatorSet.satisfies_eq_true_iff left witness).mp hLeft).1
+        comparator hComparator
+    exact
+      comparator_satisfies_stable_sandwich
+        comparator candidate witness
+        hCandidateStable hWitnessStable
+        hFloorCandidate hCandidateWitness hWitnessPrimitive
+  · apply
+      (ComparatorSet.satisfies_eq_true_iff_stable
+        right candidate hCandidateStable).mpr
+    intro comparator hComparator
+    have hInPair :
+        comparator ∈ left.comparators ++ right.comparators := by
+      simp [hComparator]
+    have hFloorCandidate :=
+      stableFloorCandidate_core_le_maximum_of_mem
+        (left.comparators ++ right.comparators)
+        comparator hInPair
+    have hWitnessPrimitive :=
+      ((ComparatorSet.satisfies_eq_true_iff right witness).mp hRight).1
+        comparator hComparator
+    exact
+      comparator_satisfies_stable_sandwich
+        comparator candidate witness
+        hCandidateStable hWitnessStable
+        hFloorCandidate hCandidateWitness hWitnessPrimitive
+
 /--
 The local completeness obligation for one pair of comparator sets.
 
@@ -943,6 +1252,32 @@ def ComparatorSetPairStableCandidatesComplete
       candidate ∈ comparatorSetIntersectionCandidates left right ∧
       left.satisfies candidate = true ∧
       right.satisfies candidate = true
+
+/--
+The finite critical-boundary pool is complete for comparator-set intersections
+that have a stable common witness.
+-/
+theorem comparatorSetPairStableCandidatesComplete
+    (left right : ComparatorSet) :
+    ComparatorSetPairStableCandidatesComplete left right := by
+  intro hWitness
+  rcases hWitness with
+    ⟨witness, hWitnessStable, hLeft, hRight⟩
+  let candidate :=
+    stableFloorMaximum
+      (left.comparators ++ right.comparators)
+  have hCandidate :
+      candidate ∈ comparatorSetIntersectionCandidates left right := by
+    simpa [candidate] using
+      stableFloorMaximum_mem_pair_candidates left right
+  have hSatisfies :=
+    stableFloorMaximum_pair_satisfies_of_stable_witness
+      left right witness hWitnessStable hLeft hRight
+  exact
+    ⟨candidate,
+      hCandidate,
+      by simpa [candidate] using hSatisfies.1,
+      by simpa [candidate] using hSatisfies.2⟩
 
 /--
 Prerelease-witness half of comparator-set-pair candidate completeness.
