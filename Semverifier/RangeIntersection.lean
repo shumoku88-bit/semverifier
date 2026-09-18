@@ -458,6 +458,12 @@ private def samePrereleaseCoreAs
     candidate.minor = reference.minor ∧
     candidate.patch = reference.patch
 
+private instance samePrereleaseCoreAs_decidable
+    (candidate reference : Version) :
+    Decidable (samePrereleaseCoreAs candidate reference) := by
+  unfold samePrereleaseCoreAs
+  infer_instance
+
 /--
 Maximum of two prerelease versions intended to lie on one fixed core.
 
