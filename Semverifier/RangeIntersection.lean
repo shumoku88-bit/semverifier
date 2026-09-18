@@ -83,6 +83,24 @@ private def stableFloorCandidate (comparator : Comparator) : Version :=
         stableAtCore comparator.bound
 
 /--
+The canonical stable floor never carries prerelease identifiers.
+-/
+private theorem stableFloorCandidate_is_stable
+    (comparator : Comparator) :
+    (stableFloorCandidate comparator).prerelease.isEmpty = true := by
+  cases comparator with
+  | mk operator bound =>
+      cases hPrerelease : bound.prerelease.isEmpty <;>
+        cases operator <;>
+          simp [
+            stableFloorCandidate,
+            minimumStable,
+            stableAtCore,
+            nextStablePatch,
+            hPrerelease
+          ]
+
+/--
 Every per-comparator stable floor is already represented by the existing
 critical-boundary construction, except for the global minimum which is added
 once at comparator-set-pair level.
