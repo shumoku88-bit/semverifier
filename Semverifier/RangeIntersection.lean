@@ -1047,6 +1047,174 @@ private theorem prereleaseLowerCandidate_isLE_of_satisfies
                 witness hWitnessPrerelease
 
 /--
+Strongest canonical prerelease lower boundary contributed by a finite
+comparator list on one witness core.
+-/
+private def prereleaseLowerMaximum :
+    List Comparator → Version → Version
+  | [], witness =>
+      prereleaseFloorAtCore witness
+  | comparator :: rest, witness =>
+      prereleaseCoreMax
+        (prereleaseLowerCandidate comparator witness)
+        (prereleaseLowerMaximum rest witness)
+
+private theorem prereleaseLowerMaximum_same_core_as
+    (comparators : List Comparator)
+    (witness : Version) :
+    samePrereleaseCoreAs
+      (prereleaseLowerMaximum comparators witness)
+      witness := by
+  induction comparators with
+  | nil =>
+      simpa [prereleaseLowerMaximum] using
+        prereleaseFloorAtCore_same_core_as witness
+  | cons comparator rest ih =>
+      simp only [prereleaseLowerMaximum]
+      exact
+        prereleaseCoreMax_same_core_as
+          (prereleaseLowerCandidate comparator witness)
+          (prereleaseLowerMaximum rest witness)
+          witness
+          (prereleaseLowerCandidate_same_core_as
+            comparator witness)
+          ih
+
+private theorem prereleaseLowerCandidate_isLE_maximum_of_mem
+    (comparators : List Comparator)
+    (comparator : Comparator)
+    (witness : Version)
+    (hComparator : comparator ∈ comparators) :
+    (Version.precedence
+      (prereleaseLowerCandidate comparator witness)
+      (prereleaseLowerMaximum comparators witness)).isLE := by
+  induction comparators with
+  | nil =>
+      simp at hComparator
+  | cons head tail ih =>
+      rcases List.mem_cons.mp hComparator with hEq | hTail
+      · subst comparator
+        simp only [prereleaseLowerMaximum]
+        exact
+          prereleaseCoreMax_left_isLE
+            (prereleaseLowerCandidate head witness)
+            (prereleaseLowerMaximum tail witness)
+            witness
+            (prereleaseLowerCandidate_same_core_as head witness)
+            (prereleaseLowerMaximum_same_core_as tail witness)
+      · have hCandidateTail :=
+          ih hTail
+        have hTailMaximum :=
+          prereleaseCoreMax_right_isLE
+            (prereleaseLowerCandidate head witness)
+            (prereleaseLowerMaximum tail witness)
+            witness
+            (prereleaseLowerCandidate_same_core_as head witness)
+            (prereleaseLowerMaximum_same_core_as tail witness)
+        have hMaximumCore :=
+          prereleaseCoreMax_same_core_as
+            (prereleaseLowerCandidate head witness)
+            (prereleaseLowerMaximum tail witness)
+            witness
+            (prereleaseLowerCandidate_same_core_as head witness)
+            (prereleaseLowerMaximum_same_core_as tail witness)
+        exact
+          prereleaseCore_isLE_trans
+            (prereleaseLowerCandidate comparator witness)
+            (prereleaseLowerMaximum tail witness)
+            (prereleaseLowerMaximum (head :: tail) witness)
+            witness
+            (prereleaseLowerCandidate_same_core_as comparator witness)
+            (prereleaseLowerMaximum_same_core_as tail witness)
+            (by
+              simpa [prereleaseLowerMaximum] using hMaximumCore)
+            hCandidateTail
+            (by
+              simpa [prereleaseLowerMaximum] using hTailMaximum)
+
+private theorem prereleaseLowerMaximum_isLE_witness
+    (comparators : List Comparator)
+    (witness : Version)
+    (hWitnessPrerelease : witness.prerelease.isEmpty = false)
+    (hSatisfies :
+      ∀ comparator ∈ comparators,
+        comparator.satisfies witness = true) :
+    (Version.precedence
+      (prereleaseLowerMaximum comparators witness)
+      witness).isLE := by
+  induction comparators with
+  | nil =>
+      apply ordering_isLE_of_ne_gt
+      simpa [prereleaseLowerMaximum] using
+        prereleaseFloorAtCore_precedence_ne_gt
+          witness hWitnessPrerelease
+  | cons comparator rest ih =>
+      simp only [prereleaseLowerMaximum]
+      have hLeftUpper :=
+        prereleaseLowerCandidate_isLE_of_satisfies
+          comparator
+          witness
+          hWitnessPrerelease
+          (hSatisfies comparator List.mem_cons_self)
+      have hRightUpper := by
+        apply ih
+        intro tailComparator hTail
+        exact
+          hSatisfies tailComparator
+            (List.mem_cons_of_mem comparator hTail)
+      exact
+        prereleaseCoreMax_isLE
+          (prereleaseLowerCandidate comparator witness)
+          (prereleaseLowerMaximum rest witness)
+          witness
+          witness
+          (prereleaseLowerCandidate_same_core_as
+            comparator witness)
+          (prereleaseLowerMaximum_same_core_as
+            rest witness)
+          ⟨hWitnessPrerelease, rfl, rfl, rfl⟩
+          hLeftUpper
+          hRightUpper
+
+private theorem prereleaseLowerMaximum_eq_floor_or_exists_lower
+    (comparators : List Comparator)
+    (witness : Version) :
+    prereleaseLowerMaximum comparators witness =
+        prereleaseFloorAtCore witness ∨
+      ∃ comparator ∈ comparators,
+        prereleaseLowerMaximum comparators witness =
+          prereleaseLowerCandidate comparator witness := by
+  induction comparators with
+  | nil =>
+      exact Or.inl (by simp [prereleaseLowerMaximum])
+  | cons head tail ih =>
+      rcases
+          prereleaseCoreMax_eq_left_or_right
+            (prereleaseLowerCandidate head witness)
+            (prereleaseLowerMaximum tail witness) with
+        hMax | hMax
+      · exact
+          Or.inr
+            ⟨head,
+              List.mem_cons_self,
+              by simpa [prereleaseLowerMaximum] using hMax⟩
+      · rcases ih with hFloor | ⟨comparator, hComparator, hLower⟩
+        · exact
+            Or.inl
+              (by
+                simp only [prereleaseLowerMaximum]
+                rw [hMax]
+                exact hFloor)
+        · exact
+            Or.inr
+              ⟨comparator,
+                List.mem_cons_of_mem head hComparator,
+                by
+                  simp only [prereleaseLowerMaximum]
+                  rw [hMax]
+                  exact hLower⟩
+
+/--
 One canonical stable lower-bound candidate contributed by a comparator.
 
 Upper-only comparators contribute the global minimum stable release. Inclusive
