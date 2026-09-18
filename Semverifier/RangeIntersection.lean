@@ -34,6 +34,12 @@ private def stableCoreLE (left right : Version) : Prop :=
       (left.minor < right.minor ∨
         (left.minor = right.minor ∧ left.patch ≤ right.patch)))
 
+private instance stableCoreLE_decidable
+    (left right : Version) :
+    Decidable (stableCoreLE left right) := by
+  unfold stableCoreLE
+  infer_instance
+
 private theorem stableCoreLE_refl (version : Version) :
     stableCoreLE version version := by
   simp [stableCoreLE]
