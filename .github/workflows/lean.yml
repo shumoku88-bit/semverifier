@@ -46,6 +46,20 @@ jobs:
           lake env lean Semverifier/Tests/HyphenRange.lean
           lake env lean Semverifier/Tests/RangeHyphenRange.lean
 
+      - name: Check public intersection CLI
+        run: |
+          lake build semverifier
+          witness="$(.lake/build/bin/semverifier intersect '1.2.3-alpha.2' '1.2.3-alpha.2 - 1.2.3')"
+          test "$witness" = $'witness\t1.2.3-alpha.2'
+          disjoint="$(.lake/build/bin/semverifier intersect '1.x' '2.x')"
+          test "$disjoint" = "disjoint"
+          if .lake/build/bin/semverifier intersect 'not-a-range' '1.x' >/tmp/semverifier-cli-out 2>/tmp/semverifier-cli-err; then
+            echo "expected invalid range to fail"
+            exit 1
+          fi
+          test ! -s /tmp/semverifier-cli-out
+          grep -Fx $'parse-error\tleft\tnot-a-range' /tmp/semverifier-cli-err
+
       - name: Audit intersection boundary candidate coverage
         run: lake exe semverifierIntersectionCoverage
       - name: Install node-semver reference
