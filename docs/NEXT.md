@@ -109,11 +109,31 @@ False-positive family checkpoint (PR #63):
 The detailed evidence is in
 [NODE_SEMVER_FALSE_POSITIVE_FAMILIES.md](NODE_SEMVER_FALSE_POSITIVE_FAMILIES.md).
 
-The next immediate task is still not an upstream repair. Build and compare a
-small set of candidate repair strategies against the complete 40,804-pair
-matrix. Measure which families each strategy changes, require witness-backed
-truth for every newly-true result, and reject any repair that silently changes
-unrelated stable-range behavior.
+Repair-strategy experiment checkpoint (PR #64):
+
+1. compared staged repair models against all 40,804 ordered range pairs;
+2. found that symmetric pairwise checking removes all 34 asymmetric errors with
+   zero new corpus errors;
+3. adding semantic non-emptiness removes 68 of the 94 baseline disagreements
+   with zero new corpus errors, leaving only the stable-gap and prerelease-
+   boundary families;
+4. rejected two `minVersion`-based intersection strategies after each created
+   1,292 new false negatives;
+5. developed a finite boundary-witness strategy that repairs all 94 baseline
+   disagreements with zero new corpus errors;
+6. mirrored Semverifier's proved boundary-candidate shape in JavaScript and
+   again obtained 0 false negatives, 0 false positives, 0 asymmetric pairs, and
+   0 introduced errors over the complete corpus;
+7. pinned the complete strategy comparison in CI.
+
+The detailed evidence is in
+[NODE_SEMVER_REPAIR_STRATEGY_EXPERIMENT.md](NODE_SEMVER_REPAIR_STRATEGY_EXPERIMENT.md).
+
+The next immediate task is to validate the successful proved-boundary-shape
+strategy as an actual temporary patch of pinned node-semver source. Run the
+upstream full tests, lint, and coverage; rerun the complete Semverifier matrix;
+exercise `includePrerelease` and `loose` separately; and measure runtime
+impact before considering any upstream submission.
 
 ## Before any upstream node-semver PR
 
