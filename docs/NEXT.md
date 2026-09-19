@@ -70,10 +70,28 @@ Current-main validation checkpoint (PR #61):
 The detailed evidence is in
 [NODE_SEMVER_CURRENT_MAIN_AUDIT.md](NODE_SEMVER_CURRENT_MAIN_AUDIT.md).
 
-The next immediate task is to extend the differential workflow to all ordered
-corpus range pairs, including Semverifier-proved disjoint pairs. That will
-detect node-semver false positives as well as false negatives and enumerate the
-complete disagreement set before any repair is investigated.
+Full-matrix validation checkpoint (PR #62):
+
+1. extended the differential workflow to all 40,804 ordered corpus range pairs;
+2. classified every pair with the proved search as a concrete witness or
+   semantic disjointness;
+3. compared the complete matrix against pinned node-semver current main
+   `6e05b7637396ac66522cff8731f07cfe0ef49a29`;
+4. observed 4 witness-backed false-negative disagreements and 90 ordered
+   differential false-positive disagreements;
+5. reduced those 90 rows to 62 unordered pairs and detected 34 unordered pairs
+   where node-semver `intersects()` is asymmetric;
+6. pinned the complete disagreement set by SHA-256 fingerprint so future
+   semantic or corpus changes cannot silently alter the checkpoint.
+
+The detailed evidence is in
+[NODE_SEMVER_FULL_INTERSECTION_AUDIT.md](NODE_SEMVER_FULL_INTERSECTION_AUDIT.md).
+
+The next immediate task is not to repair node-semver. First partition the 62
+unordered false-positive pairs into a small set of semantic families. For each
+family, minimize a representative case, check both argument orders, trace the
+current upstream source independently, and determine whether an existing
+upstream issue or PR already covers it.
 
 ## Before any upstream node-semver PR
 

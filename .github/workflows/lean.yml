@@ -75,3 +75,5 @@ jobs:
         run: node tools/conformance/node-semver-intersects.js
       - name: Audit current node-semver main intersection
         run: node tools/conformance/node-semver-current-main.js
+      - name: Audit complete intersection matrix against current node-semver main
+        run: node tools/conformance/node-semver-full-intersection-matrix.js
