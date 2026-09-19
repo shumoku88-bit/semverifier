@@ -154,6 +154,9 @@ const evaluate = (name, strategy) => {
   let baselineTrueToFalse = 0
   let repairedBaselineErrors = 0
   let introducedErrors = 0
+  const introducedExamples = []
+  const remainingFalseNegativeExamples = []
+  const remainingFalsePositiveExamples = []
 
   const results = new Map()
 
@@ -168,9 +171,22 @@ const evaluate = (name, strategy) => {
 
     if (row.expected && !actual) {
       falseNegatives += 1
+      if (remainingFalseNegativeExamples.length < 8) {
+        remainingFalseNegativeExamples.push({
+          left: row.leftRaw,
+          right: row.rightRaw,
+          witness: row.witness,
+        })
+      }
     }
     if (!row.expected && actual) {
       falsePositives += 1
+      if (remainingFalsePositiveExamples.length < 8) {
+        remainingFalsePositiveExamples.push({
+          left: row.leftRaw,
+          right: row.rightRaw,
+        })
+      }
     }
 
     if (!baselineResult && actual) {
@@ -188,6 +204,16 @@ const evaluate = (name, strategy) => {
     }
     if (!baselineWrong && strategyWrong) {
       introducedErrors += 1
+      if (introducedExamples.length < 12) {
+        introducedExamples.push({
+          left: row.leftRaw,
+          right: row.rightRaw,
+          expected: row.expected,
+          witness: row.witness,
+          baseline: baselineResult,
+          strategy: actual,
+        })
+      }
     }
   }
 
@@ -224,6 +250,24 @@ const evaluate = (name, strategy) => {
   }
 
   console.log(JSON.stringify(summary))
+  if (introducedExamples.length) {
+    console.log(JSON.stringify({
+      name: `${name}:introduced-examples`,
+      examples: introducedExamples,
+    }))
+  }
+  if (remainingFalseNegativeExamples.length) {
+    console.log(JSON.stringify({
+      name: `${name}:false-negative-examples`,
+      examples: remainingFalseNegativeExamples,
+    }))
+  }
+  if (remainingFalsePositiveExamples.length) {
+    console.log(JSON.stringify({
+      name: `${name}:false-positive-examples`,
+      examples: remainingFalsePositiveExamples,
+    }))
+  }
   return summary
 }
 
