@@ -2,6 +2,18 @@
 
 Date: 2026-09-19
 
+> **Posting status: HOLD.**
+>
+> A final freshness check found open node-semver PR #901, which independently
+> repairs all 90 previously observed false-positive rows and all 34 asymmetric
+> unordered pairs in Semverifier's 40,804-pair corpus while leaving the four
+> known false negatives unchanged. See
+> [NODE_SEMVER_PR_901_AUDIT.md](NODE_SEMVER_PR_901_AUDIT.md).
+>
+> The proposed issue body below predates that result and must not be posted
+> unchanged. Keep it as historical drafting material until the upstream
+> strategy is narrowed and the public wording is reviewed again.
+
 ## Why this issue exists
 
 This is a draft for discussion with node-semver maintainers.
