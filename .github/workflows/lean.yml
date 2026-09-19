@@ -79,3 +79,8 @@ jobs:
         run: node tools/conformance/node-semver-full-intersection-matrix.js
       - name: Compare node-semver intersection repair strategies
         run: node tools/conformance/node-semver-intersection-strategies.js
+
+      - name: Install node-semver PR #901 candidate
+        run: npm install --no-save --ignore-scripts "git+https://github.com/ryanchou1994/node-semver.git#7a597a93b2feb62696f94e4df9533363eaf8f98a"
+      - name: Audit complete intersection matrix against node-semver PR #901
+        run: node tools/conformance/node-semver-pr-901-intersection-matrix.js
