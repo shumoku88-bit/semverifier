@@ -30,9 +30,34 @@ semantic intersection produces a concrete returned witness, and
 `findIntersectionWitness? = none` is proved equivalent to semantic
 disjointness.
 
-The next phase is intentionally thinner than the proof work: expose the
-verified search as a small external oracle/CLI rather than expanding the
-semantic kernel. See [docs/NEXT.md](docs/NEXT.md) for the current handoff.
+The verified search is now exposed through a thin public CLI. The executable
+parses the existing supported range syntax and delegates intersection directly
+to the proved `Range.findIntersectionWitness?` kernel. See
+[docs/NEXT.md](docs/NEXT.md) for the next validation phase.
+
+## CLI
+
+Build and query the verified intersection oracle with:
+
+```sh
+lake exe semverifier intersect "1.2.3-alpha.2" "1.2.3-alpha.2 - 1.2.3"
+```
+
+An intersection prints a concrete witness:
+
+```text
+witness	1.2.3-alpha.2
+```
+
+A proved-empty intersection prints:
+
+```text
+disjoint
+```
+
+Parse failures are reported separately on stderr and return a non-zero exit
+status. The CLI intentionally contains no independent range logic; it is an
+adapter around the existing parser and verified search.
 
 ## Range syntax milestone
 
