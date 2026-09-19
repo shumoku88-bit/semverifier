@@ -247,24 +247,29 @@ console.log(
 console.log(`disagreement fingerprint: sha256:${mismatchFingerprint}`)
 console.log(`false-positive families: ${JSON.stringify(familySummary)}`)
 
-const expectedFamilyCounts = {
-  'exact-prerelease-asymmetry': 34,
-  'null-below-zero': 17,
-  'prerelease-boundary-overlap': 8,
-  'stable-open-gap': 3,
+const expectedFamilySummary = {
+  'exact-prerelease-asymmetry': {
+    count: 34,
+    fingerprint: 'b315170c33e02f00d72ee9fc8083b96f70d992345526da95cd7cf88137a91186',
+  },
+  'null-below-zero': {
+    count: 17,
+    fingerprint: '894d0c2f65770163cc31e9407388581aadf280292dfd7a1712325c30b598ff61',
+  },
+  'prerelease-boundary-overlap': {
+    count: 8,
+    fingerprint: '4d5cfbecd12c7cc2d2028675d36da2e2c151f9882f8c77a2986fef1db123d6f0',
+  },
+  'stable-open-gap': {
+    count: 3,
+    fingerprint: '221133ef9ead18ea52283efb98fa30bca7a8337f24665a818c20d12b71f3dcbe',
+  },
 }
 
-const observedFamilyCounts = Object.fromEntries(
-  Object.entries(familySummary).map(([family, summary]) => [
-    family,
-    summary.count,
-  ]),
-)
-
-if (JSON.stringify(observedFamilyCounts) !== JSON.stringify(expectedFamilyCounts)) {
+if (JSON.stringify(familySummary) !== JSON.stringify(expectedFamilySummary)) {
   console.error('false-positive family partition changed')
-  console.error(`expected: ${JSON.stringify(expectedFamilyCounts)}`)
-  console.error(`observed: ${JSON.stringify(observedFamilyCounts)}`)
+  console.error(`expected: ${JSON.stringify(expectedFamilySummary)}`)
+  console.error(`observed: ${JSON.stringify(familySummary)}`)
   process.exit(1)
 }
 
