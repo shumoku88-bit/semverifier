@@ -183,12 +183,13 @@ true
 ### Additional investigation
 
 Using an AI-assisted verification workflow, I compared current node-semver
-`Range.intersects()` against a small verified SemVer range-intersection oracle.
+`Range.intersects()` against a small verified SemVer range-intersection oracle:
+
+https://github.com/shumoku88-bit/semverifier
 
 This investigation used substantial AI assistance. The reproductions,
-automated audits, generated test results, and supporting artifacts are
-preserved in the linked Semverifier repository so the evidence can be
-inspected independently.
+automated audits, generated test results, and supporting audit records are
+preserved in that repository so the evidence can be inspected independently.
 
 On a deterministic 202-range corpus:
 
