@@ -19,3 +19,7 @@ lean_exe semverifierIntersectionProbe where
 
 lean_exe semverifierIntersectionCoverage where
   root := `Semverifier.Conformance.IntersectionCoverageMain
+
+
+lean_exe semverifierIntersectionMatrix where
+  root := `Semverifier.Conformance.IntersectionMatrixMain
