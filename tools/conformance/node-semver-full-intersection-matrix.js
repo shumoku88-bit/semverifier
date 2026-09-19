@@ -179,6 +179,37 @@ console.log(
 )
 console.log(`disagreement fingerprint: sha256:${mismatchFingerprint}`)
 
+const expectedCheckpoint = {
+  ranges: 202,
+  pairs: 40804,
+  witnessRows: 23410,
+  disjointRows: 17394,
+  falseNegatives: 4,
+  falsePositives: 90,
+  falsePositiveUnorderedPairs: 62,
+  asymmetricPairs: 34,
+  fingerprint: '483d882f69ac5c2184fcec2e7873da7d5d0e6bbe5785371a53a89f03c1d90ee2',
+}
+
+const observedCheckpoint = {
+  ranges: leftRanges.size,
+  pairs: lines.length,
+  witnessRows,
+  disjointRows,
+  falseNegatives: falseNegatives.length,
+  falsePositives: falsePositives.length,
+  falsePositiveUnorderedPairs: falsePositiveUnorderedPairs.size,
+  asymmetricPairs: asymmetricPairs.length,
+  fingerprint: mismatchFingerprint,
+}
+
+if (JSON.stringify(observedCheckpoint) !== JSON.stringify(expectedCheckpoint)) {
+  console.error('full intersection audit checkpoint changed')
+  console.error(`expected: ${JSON.stringify(expectedCheckpoint)}`)
+  console.error(`observed: ${JSON.stringify(observedCheckpoint)}`)
+  process.exit(1)
+}
+
 if (witnessAcceptanceMismatches.length) {
   console.error(
     `found ${witnessAcceptanceMismatches.length} Semverifier witnesses rejected by node-semver satisfies()`,
