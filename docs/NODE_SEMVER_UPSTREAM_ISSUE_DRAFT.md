@@ -30,9 +30,9 @@ What we are telling node-semver maintainers is:
 > families and appear to come from doing the final Range-level decision through
 > independent Comparator-pair overlap checks.
 >
-> We built and independently tested a range-level witness-search prototype. It
-> fixes the observed disagreement set in our corpus, but it is slower on large
-> disjoint unions. Before proposing a code change, we would like to know whether
+> We built and extensively tested a range-level witness-search prototype with
+> substantial AI assistance. It fixes the observed disagreement set in our
+> corpus, but it is slower on large disjoint unions. Before proposing a code change, we would like to know whether
 > maintainers consider this semantic direction appropriate.
 
 That is the entire purpose of the issue.
