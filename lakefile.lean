@@ -6,6 +6,9 @@ package semverifier
 @[default_target]
 lean_lib Semverifier
 
+lean_exe semverifier where
+  root := `Semverifier.Cli
+
 lean_exe semverifierConformanceCorpus where
   root := `Semverifier.Conformance.Main
 
