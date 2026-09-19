@@ -112,5 +112,8 @@ Global candidate-pool completeness is proved in Lean, culminating in
 `Range.findIntersectionWitness?_complete_verified`, and
 `Range.findIntersectionWitness?_none_iff_not_intersects_verified`.
 
-The next project phase is to expose the verified search through a small
-external oracle/CLI. See [NEXT.md](NEXT.md).
+The verified search is now exposed through the public CLI, and the differential
+workflow has advanced to a complete 202 x 202 ordered range matrix against a
+pinned node-semver current-main commit. See
+[NODE_SEMVER_FULL_INTERSECTION_AUDIT.md](NODE_SEMVER_FULL_INTERSECTION_AUDIT.md)
+and [NEXT.md](NEXT.md).
