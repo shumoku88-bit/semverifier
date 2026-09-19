@@ -209,6 +209,12 @@ It establishes something narrower and useful:
 This is exactly the role intended for Semverifier: a small semantic measuring
 instrument, not a replacement package manager.
 
+The CI adapter pins this exact checkpoint. The known disagreements themselves
+do not fail CI, but any drift in corpus size, parser-incompatibility families,
+mismatch counts, mismatch directions, or the complete per-range mismatch
+partition does. This turns the audit into a reproducible historical baseline
+rather than a log-only experiment.
+
 ## Upstream context
 
 Masterminds has received repeated requests for range-to-range operations:
