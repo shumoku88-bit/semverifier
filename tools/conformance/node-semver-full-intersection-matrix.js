@@ -151,6 +151,73 @@ const falsePositiveUnorderedPairs = new Set(
   falsePositives.map(({ left, right }) => JSON.stringify([left, right].sort())),
 )
 
+const exactPrereleaseForms = new Set([
+  '1.2.3-alpha.2',
+  '=1.2.3-alpha.2',
+])
+
+const stableOpenGapPairs = new Set([
+  JSON.stringify(['<0.0.1', '>0.0.0'].sort()),
+  JSON.stringify(['>0.0.0', '^0.0.0'].sort()),
+  JSON.stringify(['>0.0.1', '^0.0.1'].sort()),
+])
+
+const classifyFalsePositivePair = (left, right) => {
+  const unordered = [left, right].sort()
+  const unorderedKey = JSON.stringify(unordered)
+
+  if (unordered.includes('<0.0.0')) {
+    return 'null-below-zero'
+  }
+
+  const leftRight = nodeResults.get(JSON.stringify([left, right]))
+  const rightLeft = nodeResults.get(JSON.stringify([right, left]))
+  if (
+    leftRight !== rightLeft &&
+    unordered.some(range => exactPrereleaseForms.has(range))
+  ) {
+    return 'exact-prerelease-asymmetry'
+  }
+
+  if (stableOpenGapPairs.has(unorderedKey)) {
+    return 'stable-open-gap'
+  }
+
+  if (unordered.includes('<1.2.3')) {
+    return 'prerelease-boundary-overlap'
+  }
+
+  return 'unclassified'
+}
+
+const falsePositiveFamilies = new Map()
+for (const unorderedKey of falsePositiveUnorderedPairs) {
+  const [left, right] = JSON.parse(unorderedKey)
+  const family = classifyFalsePositivePair(left, right)
+  if (!falsePositiveFamilies.has(family)) {
+    falsePositiveFamilies.set(family, [])
+  }
+  falsePositiveFamilies.get(family).push(unorderedKey)
+}
+
+for (const pairs of falsePositiveFamilies.values()) {
+  pairs.sort()
+}
+
+const familySummary = Object.fromEntries(
+  [...falsePositiveFamilies.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([family, pairs]) => [
+      family,
+      {
+        count: pairs.length,
+        fingerprint: createHash('sha256')
+          .update(pairs.join('\n'))
+          .digest('hex'),
+      },
+    ]),
+)
+
 const mismatchFingerprintInput = [
   ...falseNegatives.map(({ left, right, witness }) =>
     `false-negative\t${left}\t${right}\t${witness}`
@@ -178,6 +245,43 @@ console.log(
   `false-positive unordered pairs: ${falsePositiveUnorderedPairs.size}; node-semver asymmetric unordered pairs: ${asymmetricPairs.length}`,
 )
 console.log(`disagreement fingerprint: sha256:${mismatchFingerprint}`)
+console.log(`false-positive families: ${JSON.stringify(familySummary)}`)
+
+const expectedFamilySummary = {
+  'exact-prerelease-asymmetry': {
+    count: 34,
+    fingerprint: 'b315170c33e02f00d72ee9fc8083b96f70d992345526da95cd7cf88137a91186',
+  },
+  'null-below-zero': {
+    count: 17,
+    fingerprint: '894d0c2f65770163cc31e9407388581aadf280292dfd7a1712325c30b598ff61',
+  },
+  'prerelease-boundary-overlap': {
+    count: 8,
+    fingerprint: '4d5cfbecd12c7cc2d2028675d36da2e2c151f9882f8c77a2986fef1db123d6f0',
+  },
+  'stable-open-gap': {
+    count: 3,
+    fingerprint: '221133ef9ead18ea52283efb98fa30bca7a8337f24665a818c20d12b71f3dcbe',
+  },
+}
+
+if (JSON.stringify(familySummary) !== JSON.stringify(expectedFamilySummary)) {
+  console.error('false-positive family partition changed')
+  console.error(`expected: ${JSON.stringify(expectedFamilySummary)}`)
+  console.error(`observed: ${JSON.stringify(familySummary)}`)
+  process.exit(1)
+}
+
+if (falsePositiveFamilies.has('unclassified')) {
+  console.error(
+    `found ${falsePositiveFamilies.get('unclassified').length} unclassified false-positive pairs`,
+  )
+  for (const pair of falsePositiveFamilies.get('unclassified')) {
+    console.error(pair)
+  }
+  process.exit(1)
+}
 
 const expectedCheckpoint = {
   ranges: 202,

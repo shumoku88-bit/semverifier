@@ -87,11 +87,33 @@ Full-matrix validation checkpoint (PR #62):
 The detailed evidence is in
 [NODE_SEMVER_FULL_INTERSECTION_AUDIT.md](NODE_SEMVER_FULL_INTERSECTION_AUDIT.md).
 
-The next immediate task is not to repair node-semver. First partition the 62
-unordered false-positive pairs into a small set of semantic families. For each
-family, minimize a representative case, check both argument orders, trace the
-current upstream source independently, and determine whether an existing
-upstream issue or PR already covers it.
+False-positive family checkpoint (PR #63):
+
+1. partitioned all 62 unordered differential false-positive pairs with no
+   remainder;
+2. reduced them to four semantic families:
+   - `null-below-zero`: 17 pairs;
+   - `exact-prerelease-asymmetry`: 34 pairs;
+   - `stable-open-gap`: 3 pairs;
+   - `prerelease-boundary-overlap`: 8 pairs;
+3. traced each family against the pinned current node-semver source;
+4. connected the null-range family to historical issue #521 / merged PR #538,
+   and compared the prerelease families with issues #223 / #254 and closed
+   unmerged PR #884 without treating those as substitutes for the current
+   source trace;
+5. confirmed that all 34 asymmetric pairs belong to the exact-prerelease/ANY
+   family and that node-semver's own range-intersection tests expect operand
+   symmetry;
+6. made an unclassified false-positive pair a CI failure.
+
+The detailed evidence is in
+[NODE_SEMVER_FALSE_POSITIVE_FAMILIES.md](NODE_SEMVER_FALSE_POSITIVE_FAMILIES.md).
+
+The next immediate task is still not an upstream repair. Build and compare a
+small set of candidate repair strategies against the complete 40,804-pair
+matrix. Measure which families each strategy changes, require witness-backed
+truth for every newly-true result, and reject any repair that silently changes
+unrelated stable-range behavior.
 
 ## Before any upstream node-semver PR
 
