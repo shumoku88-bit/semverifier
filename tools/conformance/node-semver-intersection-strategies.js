@@ -200,6 +200,54 @@ const boundaryWitness = (left, right) =>
     })
   })
 
+const provedBoundaryCandidates = (leftSet, rightSet) => {
+  const candidates = new Map()
+
+  const add = (candidate) => {
+    candidates.set(candidate.version, candidate)
+  }
+
+  add(new semver.SemVer('0.0.0'))
+
+  for (const comparator of [...leftSet, ...rightSet]) {
+    if (comparator.value === '') {
+      continue
+    }
+
+    const bound = comparator.semver
+    const core = `${bound.major}.${bound.minor}.${bound.patch}`
+    const stable = new semver.SemVer(core)
+    const nextStable = new semver.SemVer(
+      `${bound.major}.${bound.minor}.${bound.patch + 1}`
+    )
+
+    add(stable)
+    add(nextStable)
+
+    if (bound.prerelease.length) {
+      add(new semver.SemVer(`${core}-0`))
+      add(new semver.SemVer(bound.version))
+      add(new semver.SemVer(`${renderVersion(bound)}.0`))
+    }
+  }
+
+  return [...candidates.values()]
+}
+
+const provedBoundaryWitness = (left, right) =>
+  left.set.some((leftSet) => {
+    const leftSetRange = setRange(leftSet)
+
+    return right.set.some((rightSet) => {
+      const rightSetRange = setRange(rightSet)
+
+      return provedBoundaryCandidates(leftSet, rightSet).some((candidate) =>
+        leftSetRange.test(candidate) &&
+        rightSetRange.test(candidate)
+      )
+    })
+  })
+
 const strategies = [
   ['baseline', baseline],
   ['symmetric-pairwise', symmetricPairwise],
@@ -207,6 +255,7 @@ const strategies = [
   ['set-min-witness', setMinWitness],
   ['combined-set-min-witness', combinedSetMinWitness],
   ['boundary-witness', boundaryWitness],
+  ['proved-boundary-shape', provedBoundaryWitness],
 ]
 
 const evaluate = (name, strategy) => {
