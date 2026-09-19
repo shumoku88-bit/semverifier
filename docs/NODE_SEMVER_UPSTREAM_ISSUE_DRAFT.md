@@ -274,6 +274,22 @@ If the range-level direction is welcome, I can prepare a minimal PR with a
 small regression set covering the known semantic families and
 `includePrerelease` behavior.
 
+### Environment
+
+```text
+- node-semver: 7.8.5 (commit 6e05b7637396ac66522cff8731f07cfe0ef49a29)
+- Node: v24.13.0
+- npm: 11.6.2
+- OS: macOS 15.7.9 (Darwin 24.6.0)
+- architecture: x86_64
+```
+
+The local validation branch was:
+
+```text
+audit/range-intersects-proved-boundary
+```
+
 ### Related
 
 - #884: prerelease/shared-version false negative, closed unmerged
