@@ -129,11 +129,41 @@ Repair-strategy experiment checkpoint (PR #64):
 The detailed evidence is in
 [NODE_SEMVER_REPAIR_STRATEGY_EXPERIMENT.md](NODE_SEMVER_REPAIR_STRATEGY_EXPERIMENT.md).
 
-The next immediate task is to validate the successful proved-boundary-shape
-strategy as an actual temporary patch of pinned node-semver source. Run the
-upstream full tests, lint, and coverage; rerun the complete Semverifier matrix;
-exercise `includePrerelease` and `loose` separately; and measure runtime
-impact before considering any upstream submission.
+The proved-boundary-shape strategy has now also been validated as a temporary
+patch of pinned node-semver source.
+
+Patch adversarial-audit checkpoint:
+
+1. applied the witness-based range-level repair on a local node-semver branch
+   without changing either upstream main or Semverifier main;
+2. passed all 51 node-semver test suites, 9,444 assertions, 100% statement /
+   branch / function / line coverage, ESLint, and template-oss-check;
+3. reran the complete 40,804-pair Semverifier matrix and observed 0 false
+   negatives, 0 false positives, 0 asymmetric pairs, and 0 unexpected changes;
+4. generated 14,035 additional valid range pairs across default and
+   `includePrerelease` semantics with no observed new semantic counterexample
+   or symmetry violation;
+5. generated 6,400 strict-vs-loose comparisons with no observed normalization
+   mismatch or symmetry violation;
+6. reduced the proposed upstream regression coverage to eight representative
+   cases spanning the known false-negative family, all four false-positive
+   families, and the important `includePrerelease` branches;
+7. measured a material performance trade-off: common cases remain in the
+   microsecond range, but a 20 x 20 disjoint union benchmark was about 17x
+   slower than baseline;
+8. documented the evidence limits explicitly: generated testing is not a
+   formal proof of all node-semver syntax or options, and performance
+   acceptability remains an upstream design decision.
+
+The detailed evidence is in
+[NODE_SEMVER_PATCH_ADVERSARIAL_AUDIT.md](NODE_SEMVER_PATCH_ADVERSARIAL_AUDIT.md).
+
+The next immediate task is no longer another repair experiment. Prepare a
+concise upstream node-semver issue that presents the minimal reproductions,
+the shared Range-level semantic cause, the independent Semverifier evidence,
+the validated local witness-based prototype, and the performance trade-off.
+Link existing PR #884 and PR #885 explicitly and ask maintainers whether the
+range-level witness direction is welcome before opening an implementation PR.
 
 ## Before any upstream node-semver PR
 
