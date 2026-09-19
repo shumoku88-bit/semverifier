@@ -50,6 +50,7 @@ func main() {
 	stableExamples := make([]mismatch, 0, 20)
 	prereleaseExamples := make([]mismatch, 0, 20)
 	parseExamples := make([]string, 0, 10)
+	parseByRange := make(map[string]int)
 	byRange := make(map[string]int)
 
 	for scanner.Scan() {
@@ -75,6 +76,7 @@ func main() {
 		constraint, err := semver.NewConstraint(rangeText)
 		if err != nil {
 			constraintParseErrors++
+			parseByRange[rangeText]++
 			if len(parseExamples) < cap(parseExamples) {
 				parseExamples = append(parseExamples, rangeText)
 			}
@@ -149,6 +151,19 @@ func main() {
 	fmt.Printf("  Masterminds false / Semverifier true: %d\n", falseNegatives)
 
 	fmt.Printf("parse-incompatible range examples: %q\n", parseExamples)
+	parseRanges := make([]rangeCount, 0, len(parseByRange))
+	for rangeText, count := range parseByRange {
+		parseRanges = append(parseRanges, rangeCount{rangeText: rangeText, count: count})
+	}
+	sort.Slice(parseRanges, func(i, j int) bool {
+		if parseRanges[i].count != parseRanges[j].count {
+			return parseRanges[i].count > parseRanges[j].count
+		}
+		return parseRanges[i].rangeText < parseRanges[j].rangeText
+	})
+	for _, entry := range parseRanges {
+		fmt.Printf("parse-incompatible\tcount=%d\trange=%q\n", entry.count, entry.rangeText)
+	}
 
 	limit := 15
 	if len(counts) < limit {
