@@ -71,3 +71,31 @@ example :
   apply Range.findIntersectionWitness?_sound
     (candidate := version "1.5.0")
   native_decide
+
+example :
+    Range.intersects
+      (parsedRange "1.2.3-alpha.2")
+      (parsedRange "1.2.3-alpha.2 - 1.2.3") = true := by
+  native_decide
+
+example :
+    Range.intersects
+      (parsedRange "1.2.3-alpha.2 - 1.2.3")
+      (parsedRange "1.2.3-alpha.2") = true := by
+  native_decide
+
+example :
+    Range.intersects
+      (parsedRange "1.x")
+      (parsedRange "2.x") = false := by
+  native_decide
+
+example :
+    Range.intersects
+      (parsedRange "1.2.3-alpha.2")
+      (parsedRange "1.2.3-alpha.2 - 1.2.3") =
+    Range.intersects
+      (parsedRange "1.2.3-alpha.2 - 1.2.3")
+      (parsedRange "1.2.3-alpha.2") := by
+  exact Range.intersects_commutative _ _
+
