@@ -78,13 +78,23 @@ for (const observation of observations) {
   }
 }
 
-const known = observations.find((observation) => observation.name === 'known')
-if (!known || known.leftRight !== false || known.rightLeft !== false) {
-  throw new Error(
-    'current node-semver main no longer reproduces the known symmetric false negative',
-  )
+for (const name of [
+  'known',
+  'simpler-text-prerelease',
+  'simpler-numeric-prerelease',
+]) {
+  const observation = observations.find((item) => item.name === name)
+  if (
+    !observation ||
+    observation.leftRight !== false ||
+    observation.rightLeft !== false
+  ) {
+    throw new Error(
+      `current node-semver main does not reproduce the expected symmetric false negative for ${name}`,
+    )
+  }
 }
 
 console.log(
-  'reproduced current-main Range.intersects() false negative with a concrete Semverifier witness',
+  'reproduced current-main Range.intersects() false negatives with concrete Semverifier witnesses, including minimized prerelease forms',
 )
