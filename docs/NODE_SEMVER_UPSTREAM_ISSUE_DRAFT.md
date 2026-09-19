@@ -30,9 +30,9 @@ What we are telling node-semver maintainers is:
 > families and appear to come from doing the final Range-level decision through
 > independent Comparator-pair overlap checks.
 >
-> We built and independently tested a range-level witness-search prototype. It
-> fixes the observed disagreement set in our corpus, but it is slower on large
-> disjoint unions. Before proposing a code change, we would like to know whether
+> We built and extensively tested a range-level witness-search prototype with
+> substantial AI assistance. It fixes the observed disagreement set in our
+> corpus, but it is slower on large disjoint unions. Before proposing a code change, we would like to know whether
 > maintainers consider this semantic direction appropriate.
 
 That is the entire purpose of the issue.
@@ -182,8 +182,13 @@ true
 
 ### Additional investigation
 
-I independently compared current node-semver `Range.intersects()` against a
-small verified SemVer range-intersection oracle.
+Using an AI-assisted verification workflow, I compared current node-semver
+`Range.intersects()` against a small verified SemVer range-intersection oracle.
+
+This investigation used substantial AI assistance. The reproductions,
+automated audits, generated test results, and supporting artifacts are
+preserved in the linked Semverifier repository so the evidence can be
+inspected independently.
 
 On a deterministic 202-range corpus:
 
@@ -218,8 +223,8 @@ overlap is not always the same thing as existence of a concrete shared SemVer.
 
 ### Prototype repair direction
 
-I tested a local prototype that makes the final Range-level decision
-extensionally:
+With AI assistance, I tested a local prototype that makes the final
+Range-level decision extensionally:
 
 1. collect a finite set of critical versions around comparator boundaries;
 2. test those concrete versions against both original comparator sets using
@@ -269,6 +274,22 @@ If the range-level direction is welcome, I can prepare a minimal PR with a
 small regression set covering the known semantic families and
 `includePrerelease` behavior.
 
+### Environment
+
+```text
+- node-semver: 7.8.5 (commit 6e05b7637396ac66522cff8731f07cfe0ef49a29)
+- Node: v24.13.0
+- npm: 11.6.2
+- OS: macOS 15.7.9 (Darwin 24.6.0)
+- architecture: x86_64
+```
+
+The local validation branch was:
+
+```text
+audit/range-intersects-proved-boundary
+```
+
 ### Related
 
 - #884: prerelease/shared-version false negative, closed unmerged
@@ -301,4 +322,6 @@ Immediately before creating the upstream issue:
 4. use the repository Bug issue template;
 5. keep the first reproduction and expected behavior near the top;
 6. link this Semverifier repository only as supporting evidence, not as a
-   prerequisite for understanding the report.
+   prerequisite for understanding the report;
+7. keep the AI-assistance disclosure in the posted issue so authorship and
+   verification provenance are transparent.
