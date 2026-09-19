@@ -104,8 +104,25 @@ and `^X`.
 
 This is stronger than a simple cross-library dialect difference because the
 observed behavior appears inconsistent with Masterminds' own source comment.
-It should still be reduced and checked directly against the intended upstream
-contract before being reported as a bug.
+
+The current implementation also exposes a concrete root-cause path:
+
+1. parsing `^*` recognizes the wildcard major and rewrites its internal
+   version to `0.0.0`;
+2. that branch sets `dirty = true` but leaves both `minorDirty` and
+   `patchDirty` false;
+3. `constraintCaret` does not use the general `dirty` bit to implement its
+   documented `^* --> (any)` case;
+4. with major and minor both zero and neither narrower dirty bit set, execution
+   falls through to the final patch-equality check.
+
+That path explains the observed behavior: `^*` behaves effectively like an
+exact `0.0.0` core for stable versions instead of the documented wildcard.
+The same parser shape applies to `^x` and `^X`.
+
+This is therefore a focused implementation/documentation inconsistency
+candidate. It should still be reproduced with a minimal upstream-side test
+before being reported as a confirmed bug.
 
 ### Zero tilde is an explicit semantic difference
 
