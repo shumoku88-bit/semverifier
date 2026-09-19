@@ -386,13 +386,113 @@ const summaries = strategies.map(([name, strategy]) =>
   evaluate(name, strategy)
 )
 
-const baselineSummary = summaries.find(({ name }) => name === 'baseline')
-if (
-  baselineSummary.falseNegatives !== 4 ||
-  baselineSummary.falsePositives !== 90 ||
-  baselineSummary.asymmetricUnorderedPairs !== 34
-) {
-  throw new Error(
-    `baseline checkpoint changed: ${JSON.stringify(baselineSummary)}`
-  )
+const checkpointFields = ({
+  name,
+  falseNegatives,
+  falsePositives,
+  totalErrors,
+  asymmetricUnorderedPairs,
+  baselineFalseToTrue,
+  baselineTrueToFalse,
+  repairedBaselineErrors,
+  introducedErrors,
+}) => ({
+  name,
+  falseNegatives,
+  falsePositives,
+  totalErrors,
+  asymmetricUnorderedPairs,
+  baselineFalseToTrue,
+  baselineTrueToFalse,
+  repairedBaselineErrors,
+  introducedErrors,
+})
+
+const expectedSummaries = [
+  {
+    name: 'baseline',
+    falseNegatives: 4,
+    falsePositives: 90,
+    totalErrors: 94,
+    asymmetricUnorderedPairs: 34,
+    baselineFalseToTrue: 0,
+    baselineTrueToFalse: 0,
+    repairedBaselineErrors: 0,
+    introducedErrors: 0,
+  },
+  {
+    name: 'symmetric-pairwise',
+    falseNegatives: 4,
+    falsePositives: 56,
+    totalErrors: 60,
+    asymmetricUnorderedPairs: 0,
+    baselineFalseToTrue: 0,
+    baselineTrueToFalse: 34,
+    repairedBaselineErrors: 34,
+    introducedErrors: 0,
+  },
+  {
+    name: 'symmetric-pairwise+nonempty-sets',
+    falseNegatives: 4,
+    falsePositives: 22,
+    totalErrors: 26,
+    asymmetricUnorderedPairs: 0,
+    baselineFalseToTrue: 0,
+    baselineTrueToFalse: 68,
+    repairedBaselineErrors: 68,
+    introducedErrors: 0,
+  },
+  {
+    name: 'set-min-witness',
+    falseNegatives: 1292,
+    falsePositives: 0,
+    totalErrors: 1292,
+    asymmetricUnorderedPairs: 0,
+    baselineFalseToTrue: 4,
+    baselineTrueToFalse: 1382,
+    repairedBaselineErrors: 94,
+    introducedErrors: 1292,
+  },
+  {
+    name: 'combined-set-min-witness',
+    falseNegatives: 1292,
+    falsePositives: 0,
+    totalErrors: 1292,
+    asymmetricUnorderedPairs: 0,
+    baselineFalseToTrue: 4,
+    baselineTrueToFalse: 1382,
+    repairedBaselineErrors: 94,
+    introducedErrors: 1292,
+  },
+  {
+    name: 'boundary-witness',
+    falseNegatives: 0,
+    falsePositives: 0,
+    totalErrors: 0,
+    asymmetricUnorderedPairs: 0,
+    baselineFalseToTrue: 4,
+    baselineTrueToFalse: 90,
+    repairedBaselineErrors: 94,
+    introducedErrors: 0,
+  },
+  {
+    name: 'proved-boundary-shape',
+    falseNegatives: 0,
+    falsePositives: 0,
+    totalErrors: 0,
+    asymmetricUnorderedPairs: 0,
+    baselineFalseToTrue: 4,
+    baselineTrueToFalse: 90,
+    repairedBaselineErrors: 94,
+    introducedErrors: 0,
+  },
+]
+
+const observedSummaries = summaries.map(checkpointFields)
+
+if (JSON.stringify(observedSummaries) !== JSON.stringify(expectedSummaries)) {
+  console.error('repair strategy checkpoint changed')
+  console.error(`expected: ${JSON.stringify(expectedSummaries)}`)
+  console.error(`observed: ${JSON.stringify(observedSummaries)}`)
+  process.exit(1)
 }
