@@ -68,3 +68,8 @@ jobs:
         run: node tools/conformance/node-semver.js
       - name: Concrete intersection witness probe
         run: node tools/conformance/node-semver-intersects.js
+
+      - name: Install pinned current node-semver main
+        run: npm install --no-save --ignore-scripts "git+https://github.com/npm/node-semver.git#6e05b7637396ac66522cff8731f07cfe0ef49a29"
+      - name: Audit current node-semver main intersection
+        run: node tools/conformance/node-semver-current-main.js
