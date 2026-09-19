@@ -53,15 +53,27 @@ The next task is real-world validation against the current node-semver `main`.
 Use the CLI as the human-facing oracle while keeping automated differential
 adapters outside the semantic kernel.
 
-The immediate sequence is:
+Current-main validation checkpoint (PR #61):
 
-1. reproduce the known `Range.intersects()` false negative against current
-   node-semver `main`;
-2. minimize and record the smallest useful witness-backed contradiction;
-3. trace the current upstream implementation independently;
-4. build a differential workflow that compares current upstream behavior with
-   Semverifier and enumerates every disagreement;
-5. only then investigate and validate candidate repairs.
+1. reproduced the known `Range.intersects()` false negative against pinned
+   current node-semver `main`
+   `6e05b7637396ac66522cff8731f07cfe0ef49a29`;
+2. reduced the reproduction to compact witness-backed forms including
+   `1.0.0-0` vs. `1.0.0-0 - 1.0.0`;
+3. checked both argument orders and required node-semver `satisfies()` to
+   accept the Semverifier witness on both sides;
+4. independently traced the information loss from comparator-set prerelease
+   admission to pairwise `Comparator.intersects()` checks;
+5. reran the existing concrete-witness probe against the pinned current-main
+   commit.
+
+The detailed evidence is in
+[NODE_SEMVER_CURRENT_MAIN_AUDIT.md](NODE_SEMVER_CURRENT_MAIN_AUDIT.md).
+
+The next immediate task is to extend the differential workflow to all ordered
+corpus range pairs, including Semverifier-proved disjoint pairs. That will
+detect node-semver false positives as well as false negatives and enumerate the
+complete disagreement set before any repair is investigated.
 
 ## Before any upstream node-semver PR
 
