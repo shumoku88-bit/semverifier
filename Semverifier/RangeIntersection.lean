@@ -3034,6 +3034,15 @@ def findIntersectionWitness? (left right : Range) : Option Version :=
   firstOverlap? left right (intersectionCandidates left right)
 
 /--
+Decide semantic range intersection using the verified witness search.
+
+The Boolean result is proved below to agree exactly with the extensional
+`Intersects` proposition.
+-/
+def intersects (left right : Range) : Bool :=
+  (findIntersectionWitness? left right).isSome
+
+/--
 Candidate-pool completeness property for the finite intersection search.
 
 It says that whenever the semantic ranges intersect, at least one generated
@@ -3283,6 +3292,60 @@ theorem findIntersectionWitness?_none_iff_not_intersects_verified
   findIntersectionWitness?_none_iff_not_intersects
     left right
     (intersectionCandidatesComplete left right)
+
+/--
+The executable intersection decision agrees exactly with the extensional
+semantic proposition.
+-/
+theorem intersects_eq_true_iff
+    (left right : Range) :
+    intersects left right = true ↔ Intersects left right := by
+  constructor
+  · intro h
+    unfold intersects at h
+    cases hSearch : findIntersectionWitness? left right with
+    | none =>
+        simp [hSearch] at h
+    | some candidate =>
+        exact findIntersectionWitness?_sound left right candidate hSearch
+  · intro h
+    rcases
+        findIntersectionWitness?_complete_verified left right h with
+      ⟨candidate, hSearch⟩
+    simp [intersects, hSearch]
+
+/--
+The executable intersection decision is symmetric because its proved semantic
+specification is symmetric.
+-/
+theorem intersects_commutative
+    (left right : Range) :
+    intersects left right = intersects right left := by
+  cases hLeft : intersects left right with
+  | false =>
+      cases hRight : intersects right left with
+      | false =>
+          rfl
+      | true =>
+          have hSemanticRight : Intersects right left :=
+            (intersects_eq_true_iff right left).mp hRight
+          have hSemanticLeft : Intersects left right :=
+            (Range.intersects_comm left right).mpr hSemanticRight
+          have hLeftTrue : intersects left right = true :=
+            (intersects_eq_true_iff left right).mpr hSemanticLeft
+          simp [hLeft] at hLeftTrue
+  | true =>
+      cases hRight : intersects right left with
+      | false =>
+          have hSemanticLeft : Intersects left right :=
+            (intersects_eq_true_iff left right).mp hLeft
+          have hSemanticRight : Intersects right left :=
+            (Range.intersects_comm left right).mp hSemanticLeft
+          have hRightTrue : intersects right left = true :=
+            (intersects_eq_true_iff right left).mpr hSemanticRight
+          simp [hRight] at hRightTrue
+      | true =>
+          rfl
 
 end Range
 end Semverifier
