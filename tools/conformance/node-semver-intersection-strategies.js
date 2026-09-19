@@ -122,11 +122,29 @@ const setMinWitness = (left, right) =>
     })
   })
 
+const combinedSetMinWitness = (left, right) =>
+  left.set.some((leftSet) => {
+    const leftSetRange = setRange(leftSet)
+
+    return right.set.some((rightSet) => {
+      const rightSetRange = setRange(rightSet)
+      const combinedRaw = [...leftSet, ...rightSet]
+        .map((comparator) => comparator.value)
+        .join(' ')
+      const candidate = semver.minVersion(combinedRaw)
+
+      return candidate !== null &&
+        leftSetRange.test(candidate) &&
+        rightSetRange.test(candidate)
+    })
+  })
+
 const strategies = [
   ['baseline', baseline],
   ['symmetric-pairwise', symmetricPairwise],
   ['symmetric-pairwise+nonempty-sets', symmetricPairwiseWithNonemptySets],
   ['set-min-witness', setMinWitness],
+  ['combined-set-min-witness', combinedSetMinWitness],
 ]
 
 const evaluate = (name, strategy) => {
