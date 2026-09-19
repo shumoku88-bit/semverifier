@@ -66,6 +66,22 @@ jobs:
         run: npm install --no-save --ignore-scripts semver@7.8.5
       - name: Differential conformance against node-semver
         run: node tools/conformance/node-semver.js
+
+      - name: Install Go for Masterminds semver audit
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version: "1.26"
+          cache: false
+      - name: Audit satisfaction semantics against Masterminds semver
+        run: |
+          lake exe semverifierConformanceCorpus > /tmp/semverifier-conformance.tsv
+          audit_dir="$(mktemp -d)"
+          cp tools/conformance/masterminds-semver.go "$audit_dir/main.go"
+          cd "$audit_dir"
+          go mod init semverifier-masterminds-audit
+          go get github.com/Masterminds/semver/v3@dd2b995c61c39ddd668b23ac919b04d607be35ab
+          go run . < /tmp/semverifier-conformance.tsv
+
       - name: Concrete intersection witness probe
         run: node tools/conformance/node-semver-intersects.js
 
