@@ -24,42 +24,44 @@ The bounded intersection audit and the witness-backed node-semver
 `Range.intersects()` discrepancy remain documented in
 [INTERSECTION_DIFFERENTIAL.md](INTERSECTION_DIFFERENTIAL.md).
 
+## CLI checkpoint complete
+
+The first public oracle slice is implemented in PR #60.
+
+The CLI now:
+
+1. accepts `semverifier intersect "<left range>" "<right range>"`;
+2. parses both operands with the existing `Range.parse?` frontend;
+3. calls the proved `Range.findIntersectionWitness?` search directly;
+4. prints a concrete witness or `disjoint`;
+5. distinguishes parse failures with a non-zero exit status;
+6. is exercised in CI against an intersecting case, a disjoint case, and an
+   invalid range.
+
+The CI witness case is the known prerelease/hyphen-range discrepancy already
+recorded in [INTERSECTION_DIFFERENTIAL.md](INTERSECTION_DIFFERENTIAL.md), so the
+external interface is checked against a semantically meaningful example rather
+than only a trivial smoke test.
+
+No new range semantics were added to support the CLI.
+
 ## Next phase
 
 Do not reopen the completeness proof unless a concrete semantic gap is found.
 
-The next phase is to make the verified kernel useful as a small semantic oracle.
-The first task should be a minimal public CLI around the existing parser and
-verified intersection search.
+The next task is real-world validation against the current node-semver `main`.
+Use the CLI as the human-facing oracle while keeping automated differential
+adapters outside the semantic kernel.
 
-A reasonable first interface is conceptually:
+The immediate sequence is:
 
-```text
-semverifier intersect "<left range>" "<right range>"
-```
-
-For the currently supported syntax, it should:
-
-1. parse both ranges with the existing Semverifier range parser;
-2. run the verified `Range.findIntersectionWitness?` search;
-3. print a concrete witness when the ranges intersect;
-4. report disjointness when the verified search returns `none`;
-5. distinguish parse failure from semantic disjointness.
-
-Keep this layer thin. The CLI should call the proved kernel rather than
-reimplement range logic.
-
-## Definition of done for the first CLI slice
-
-- add a user-facing `lean_exe semverifier` or equivalently small executable;
-- accept two supported range expressions for intersection checking;
-- expose witness vs. disjoint vs. parse-error outcomes clearly;
-- add focused executable tests or CI examples;
-- keep node-semver outside the semantic kernel.
-
-After that, the next useful layer is a differential-oracle workflow that makes
-it easy to compare existing implementations against Semverifier and emit
-witness-backed counterexamples.
+1. reproduce the known `Range.intersects()` false negative against current
+   node-semver `main`;
+2. minimize and record the smallest useful witness-backed contradiction;
+3. trace the current upstream implementation independently;
+4. build a differential workflow that compares current upstream behavior with
+   Semverifier and enumerates every disagreement;
+5. only then investigate and validate candidate repairs.
 
 ## Before any upstream node-semver PR
 
