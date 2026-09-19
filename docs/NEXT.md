@@ -158,12 +158,29 @@ Patch adversarial-audit checkpoint:
 The detailed evidence is in
 [NODE_SEMVER_PATCH_ADVERSARIAL_AUDIT.md](NODE_SEMVER_PATCH_ADVERSARIAL_AUDIT.md).
 
-The next immediate task is no longer another repair experiment. Prepare a
-concise upstream node-semver issue that presents the minimal reproductions,
-the shared Range-level semantic cause, the independent Semverifier evidence,
-the validated local witness-based prototype, and the performance trade-off.
-Link existing PR #884 and PR #885 explicitly and ask maintainers whether the
-range-level witness direction is welcome before opening an implementation PR.
+The upstream issue draft is now prepared in
+[NODE_SEMVER_UPSTREAM_ISSUE_DRAFT.md](NODE_SEMVER_UPSTREAM_ISSUE_DRAFT.md).
+
+The draft intentionally:
+
+1. leads with minimal executable false-negative, false-positive, and asymmetry
+   reproductions rather than proof terminology;
+2. defines expected behavior extensionally as existence of a concrete shared
+   SemVer version under the selected options;
+3. summarizes the 40,804-pair independent audit without requiring readers to
+   understand Lean;
+4. explains the Range-level context loss from pairwise Comparator intersection;
+5. describes the validated witness-based prototype as a proposed direction,
+   not as an already-approved upstream solution;
+6. discloses the large-union performance regression explicitly;
+7. links PR #884, PR #885, and the historical near-zero work;
+8. asks maintainers whether the range-level witness direction is welcome before
+   opening an implementation PR.
+
+The next immediate task is a final freshness check immediately before posting:
+confirm current node-semver main, the state of #884 / #885, and absence of a
+newer duplicate issue. If those remain consistent, submit the issue using the
+repository Bug template. Do not open the implementation PR yet.
 
 ## Before any upstream node-semver PR
 
