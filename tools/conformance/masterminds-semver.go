@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"maps"
 	"os"
 	"sort"
 	"strings"
@@ -177,7 +178,43 @@ func main() {
 	printExamples("stable", stableExamples)
 	printExamples("prerelease", prereleaseExamples)
 
-	if versionParseErrors != 0 {
+	expectedParseByRange := map[string]int{
+		"":              384,
+		">=1.2.3 || ": 384,
+	}
+	expectedMismatchByRange := map[string]int{
+		">1.2.3-alpha.2":             144,
+		">1.2.3-alpha.2 || >=3.0.0": 144,
+		">=1.2.3-alpha.2":            144,
+		"^*":                         126,
+		"^X":                         126,
+		"^x":                         126,
+		"* - *":                      120,
+		"~0.0.0":                     120,
+		"~>0.0.0":                    120,
+		"<1.2.3-alpha.2":             108,
+		"<=1.2.3-alpha.2":            108,
+		"1.2.3 - *":                   74,
+		">1.2.3-alpha.2 <2.0.0":       20,
+		"^1.2.3-beta.2":               16,
+	}
+
+	checkpointOK :=
+		totalRows == 77568 &&
+			compared == 76800 &&
+			constraintParseErrors == 768 &&
+			versionParseErrors == 0 &&
+			stableMismatches == 812 &&
+			prereleaseMismatches == 684 &&
+			falsePositives == 924 &&
+			falseNegatives == 572 &&
+			maps.Equal(parseByRange, expectedParseByRange) &&
+			maps.Equal(byRange, expectedMismatchByRange)
+
+	if !checkpointOK {
+		fmt.Fprintln(os.Stderr, "Masterminds conformance checkpoint drifted; review the full audit output")
 		os.Exit(1)
 	}
+
+	fmt.Println("Masterminds conformance checkpoint matches the pinned audit")
 }
