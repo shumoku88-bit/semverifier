@@ -1,7 +1,10 @@
 'use strict'
 
+const { createHash } = require('node:crypto')
 const { spawnSync } = require('node:child_process')
 const semver = require('semver')
+
+const nodeSemverMainSha = '6e05b7637396ac66522cff8731f07cfe0ef49a29'
 
 const run = spawnSync(
   'lake',
@@ -25,6 +28,7 @@ const lines = run.stdout.split('\n').filter(Boolean)
 const seenPairs = new Set()
 const leftRanges = new Set()
 const rightRanges = new Set()
+const nodeResults = new Map()
 
 const witnessAcceptanceMismatches = []
 const falseNegatives = []
@@ -51,6 +55,7 @@ for (const line of lines) {
   rightRanges.add(right)
 
   const nodeIntersects = new semver.Range(left).intersects(new semver.Range(right))
+  nodeResults.set(pairKey, nodeIntersects)
 
   if (result === 'disjoint') {
     disjointRows += 1
@@ -117,6 +122,49 @@ if (lines.length !== expectedRows || seenPairs.size !== expectedRows) {
   )
 }
 
+const asymmetricPairs = []
+const visitedUnorderedPairs = new Set()
+
+for (const pairKey of seenPairs) {
+  const [left, right] = JSON.parse(pairKey)
+  const unorderedKey = JSON.stringify([left, right].sort())
+
+  if (visitedUnorderedPairs.has(unorderedKey)) {
+    continue
+  }
+  visitedUnorderedPairs.add(unorderedKey)
+
+  const leftRight = nodeResults.get(JSON.stringify([left, right]))
+  const rightLeft = nodeResults.get(JSON.stringify([right, left]))
+
+  if (leftRight !== rightLeft) {
+    asymmetricPairs.push({
+      left,
+      right,
+      leftRight,
+      rightLeft,
+    })
+  }
+}
+
+const falsePositiveUnorderedPairs = new Set(
+  falsePositives.map(({ left, right }) => JSON.stringify([left, right].sort())),
+)
+
+const mismatchFingerprintInput = [
+  ...falseNegatives.map(({ left, right, witness }) =>
+    `false-negative\t${left}\t${right}\t${witness}`
+  ),
+  ...falsePositives.map(({ left, right }) =>
+    `false-positive\t${left}\t${right}`
+  ),
+].sort().join('\n')
+
+const mismatchFingerprint = createHash('sha256')
+  .update(mismatchFingerprintInput)
+  .digest('hex')
+
+console.log(`node-semver audit target: ${nodeSemverMainSha}`)
 console.log(
   `checked complete ${leftRanges.size} x ${rightRanges.size} ordered range matrix (${lines.length} pairs) against node-semver ${require('semver/package.json').version}`,
 )
@@ -126,6 +174,10 @@ console.log(
 console.log(
   `disagreements: ${falseNegatives.length} node-semver false negatives, ${falsePositives.length} node-semver false positives`,
 )
+console.log(
+  `false-positive unordered pairs: ${falsePositiveUnorderedPairs.size}; node-semver asymmetric unordered pairs: ${asymmetricPairs.length}`,
+)
+console.log(`disagreement fingerprint: sha256:${mismatchFingerprint}`)
 
 if (witnessAcceptanceMismatches.length) {
   console.error(
@@ -143,4 +195,8 @@ for (const mismatch of falseNegatives) {
 
 for (const mismatch of falsePositives) {
   console.warn(JSON.stringify({ kind: 'false-positive', ...mismatch }))
+}
+
+for (const mismatch of asymmetricPairs) {
+  console.warn(JSON.stringify({ kind: 'asymmetric', ...mismatch }))
 }
