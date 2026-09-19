@@ -172,6 +172,12 @@ const boundaryCandidates = (leftSet, rightSet) => {
 
     add(new semver.SemVer(comparator.semver.version))
 
+    if (comparator.semver.prerelease.length) {
+      add(new semver.SemVer(
+        `${comparator.semver.major}.${comparator.semver.minor}.${comparator.semver.patch}`
+      ))
+    }
+
     if (comparator.operator === '>') {
       add(strictLowerSuccessor(comparator.semver))
     }
