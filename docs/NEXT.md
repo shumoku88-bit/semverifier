@@ -177,10 +177,29 @@ The draft intentionally:
 8. asks maintainers whether the range-level witness direction is welcome before
    opening an implementation PR.
 
-The next immediate task is a final freshness check immediately before posting:
-confirm current node-semver main, the state of #884 / #885, and absence of a
-newer duplicate issue. If those remain consistent, submit the issue using the
-repository Bug template. Do not open the implementation PR yet.
+Final freshness check / PR #901 checkpoint (PR #69):
+
+1. reconfirmed node-semver main at
+   `6e05b7637396ac66522cff8731f07cfe0ef49a29` (7.8.5);
+2. reconfirmed #884 closed/unmerged and #885 open;
+3. found no newer `intersects` issue, but found open PR #901
+   (`7a597a93b2feb62696f94e4df9533363eaf8f98a`) directly addressing the
+   false-positive side;
+4. reran the complete 40,804-pair proved Semverifier matrix against #901;
+5. observed 4 false negatives, 0 false positives, and 0 asymmetric pairs;
+6. confirmed that #901 removes all 90 baseline false-positive rows and all 34
+   baseline asymmetries in this corpus while leaving the same four known
+   false negatives unchanged.
+
+The detailed evidence is in
+[NODE_SEMVER_PR_901_AUDIT.md](NODE_SEMVER_PR_901_AUDIT.md).
+
+Therefore the previous broad upstream issue draft is on hold and must not be
+posted unchanged. The next upstream decision is narrower: decide whether the
+#901 validation is useful as a concise comment there, and separately determine
+the best way to report the remaining four witness-backed false negatives.
+Review any public wording field-by-field before posting. Do not open a
+node-semver implementation PR yet.
 
 ## Before any upstream node-semver PR
 
