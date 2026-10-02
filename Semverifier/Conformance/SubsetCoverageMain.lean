@@ -68,9 +68,14 @@ def runSubsetCoverage : IO Unit := do
   IO.println
     s!"boundary witnesses not seen in 384-version corpus: {witnessOutsideBoundedCorpus}"
 
-  if boundedMisses != 0 || soundnessFailures != 0 then
+  if pairs != 40804 ||
+      boundedFailures != 29114 ||
+      searchWitnesses != 30692 ||
+      boundedMisses != 0 ||
+      soundnessFailures != 0 ||
+      witnessOutsideBoundedCorpus != 1578 then
     throw <| IO.userError
-      "subset boundary candidate coverage failed"
+      "subset boundary candidate coverage checkpoint drifted"
 
 end Semverifier.Conformance
 
