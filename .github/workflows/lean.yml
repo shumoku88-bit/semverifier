@@ -37,6 +37,7 @@ jobs:
           lake env lean Semverifier/Tests/Range.lean
           lake env lean Semverifier/Tests/RangeAlgebra.lean
           lake env lean Semverifier/Tests/RangeIntersection.lean
+          lake env lean Semverifier/Tests/RangeSubset.lean
           lake env lean Semverifier/Tests/Caret.lean
           lake env lean Semverifier/Tests/RangeCaret.lean
           lake env lean Semverifier/Tests/Tilde.lean
@@ -62,6 +63,8 @@ jobs:
 
       - name: Audit intersection boundary candidate coverage
         run: lake exe semverifierIntersectionCoverage
+      - name: Audit subset boundary candidate coverage
+        run: lake exe semverifierSubsetCoverage
       - name: Install node-semver reference
         run: npm install --no-save --ignore-scripts semver@7.8.5
       - name: Differential conformance against node-semver
