@@ -54,6 +54,127 @@ jobs:
           test "$witness" = $'witness\t1.2.3-alpha.2'
           disjoint="$(.lake/build/bin/semverifier intersect '1.x' '2.x')"
           test "$disjoint" = "disjoint"
+          subset_ok="$(.lake/build/bin/semverifier subset '>=1.2.0 <2.0.0' '>=1.0.0 <3.0.0')"
+          test "$subset_ok" = "subset"
+          subset_bad="$(.lake/build/bin/semverifier subset '>=1.0.0 <3.0.0' '>=1.2.0 <2.0.0')"
+          case "$subset_bad" in
+                      if .lake/build/bin/semverifier intersect 'not-a-range' '1.x' >/tmp/semverifier-cli-out 2>/tmp/semverifier-cli-err; then
+            echo "expected invalid range to fail"
+            exit 1
+          fi
+          test ! -s /tmp/semverifier-cli-out
+          grep -Fx $'parse-error\tleft\tnot-a-range' /tmp/semverifier-cli-err
+
+      - name: Audit intersection boundary candidate coverage
+        run: lake exe semverifierIntersectionCoverage
+      - name: Audit subset boundary candidate coverage
+        run: lake exe semverifierSubsetCoverage
+      - name: Install node-semver reference
+        run: npm install --no-save --ignore-scripts semver@7.8.5
+      - name: Differential conformance against node-semver
+        run: node tools/conformance/node-semver.js
+
+      - name: Install Go for Masterminds semver audit
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version: "1.26"
+          cache: false
+      - name: Audit satisfaction semantics against Masterminds semver
+        run: |
+          lake exe semverifierConformanceCorpus > /tmp/semverifier-conformance.tsv
+          audit_dir="$(mktemp -d)"
+          cp tools/conformance/masterminds-semver.go "$audit_dir/main.go"
+          cd "$audit_dir"
+          go mod init semverifier-masterminds-audit
+          go get github.com/Masterminds/semver/v3@dd2b995c61c39ddd668b23ac919b04d607be35ab
+          go run . < /tmp/semverifier-conformance.tsv
+
+      - name: Compare Masterminds caret wildcard repair candidates
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          probe_source="$GITHUB_WORKSPACE/tools/conformance/masterminds-caret-wildcard-probe.go"
+
+          run_probe() {
+            label="$1"
+            repo_url="$2"
+            commit="$3"
+            expected="$4"
+
+            probe_dir="$(mktemp -d)"
+            git clone --quiet "$repo_url" "$probe_dir/semver"
+            git -C "$probe_dir/semver" checkout --quiet "$commit"
+            cp "$probe_source" "$probe_dir/main.go"
+
+            (
+              cd "$probe_dir"
+              go mod init semverifier-masterminds-caret-probe >/dev/null
+              go mod edit -require=github.com/Masterminds/semver/v3@v3.0.0
+              go mod edit -replace=github.com/Masterminds/semver/v3="$probe_dir/semver"
+              output="$(go run .)"
+              printf '%s\t%s\n' "$label" "$output"
+              test "$output" = "$expected"
+            )
+          }
+
+          run_probe \
+            baseline \
+            https://github.com/Masterminds/semver.git \
+            dd2b995c61c39ddd668b23ac919b04d607be35ab \
+            "stable=false default-prerelease=false included-prerelease=false"
+
+          run_probe \
+            pr-316 \
+            https://github.com/jackwalkerlabs/semver.git \
+            8fd2b4b3978ebb17cd8d2015186270cffed1c473 \
+            "stable=true default-prerelease=false included-prerelease=false"
+
+          run_probe \
+            pr-319 \
+            https://github.com/TastyHeadphones/semver.git \
+            43e5010ceb23aa60e025a32302d54d36949b9cbb \
+            "stable=true default-prerelease=false included-prerelease=true"
+
+      - name: Audit Composer semver intersection semantics
+        shell: bash
+        run: |
+          set -euo pipefail
+          php --version
+
+          lake exe semverifierConformanceCorpus > /tmp/semverifier-conformance.tsv
+          lake exe semverifierIntersectionMatrix > /tmp/semverifier-intersection.tsv
+
+          composer_dir="$(mktemp -d)/semver"
+          git clone --quiet https://github.com/composer/semver.git "$composer_dir"
+          git -C "$composer_dir" checkout --quiet 4221b9ec7fdd42b5b3d939509d55d97b511c52df
+
+          php tools/conformance/composer-semver-intersection.php \
+            /tmp/semverifier-conformance.tsv \
+            /tmp/semverifier-intersection.tsv \
+            "$composer_dir"
+
+      - name: Concrete intersection witness probe
+        run: node tools/conformance/node-semver-intersects.js
+
+      - name: Install pinned current node-semver main
+        run: npm install --no-save --ignore-scripts "git+https://github.com/npm/node-semver.git#6e05b7637396ac66522cff8731f07cfe0ef49a29"
+      - name: Probe all Semverifier witnesses against current node-semver main
+        run: node tools/conformance/node-semver-intersects.js
+      - name: Audit current node-semver main intersection
+        run: node tools/conformance/node-semver-current-main.js
+      - name: Audit complete intersection matrix against current node-semver main
+        run: node tools/conformance/node-semver-full-intersection-matrix.js
+      - name: Compare node-semver intersection repair strategies
+        run: node tools/conformance/node-semver-intersection-strategies.js
+
+      - name: Install node-semver PR #901 candidate
+        run: npm install --no-save --ignore-scripts "git+https://github.com/ryanchou1994/node-semver.git#7a597a93b2feb62696f94e4df9533363eaf8f98a"
+      - name: Audit complete intersection matrix against node-semver PR #901
+        run: node tools/conformance/node-semver-pr-901-intersection-matrix.js
+counterexample\t'*) ;;
+            *) echo "expected subset counterexample, got: $subset_bad"; exit 1 ;;
+          esac
           if .lake/build/bin/semverifier intersect 'not-a-range' '1.x' >/tmp/semverifier-cli-out 2>/tmp/semverifier-cli-err; then
             echo "expected invalid range to fail"
             exit 1
