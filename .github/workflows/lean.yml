@@ -82,6 +82,53 @@ jobs:
           go get github.com/Masterminds/semver/v3@dd2b995c61c39ddd668b23ac919b04d607be35ab
           go run . < /tmp/semverifier-conformance.tsv
 
+      - name: Compare Masterminds caret wildcard repair candidates
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          probe_source="$GITHUB_WORKSPACE/tools/conformance/masterminds-caret-wildcard-probe.go"
+
+          run_probe() {
+            label="$1"
+            repo_url="$2"
+            commit="$3"
+            expected="$4"
+
+            probe_dir="$(mktemp -d)"
+            git clone --quiet "$repo_url" "$probe_dir/semver"
+            git -C "$probe_dir/semver" checkout --quiet "$commit"
+            cp "$probe_source" "$probe_dir/main.go"
+
+            (
+              cd "$probe_dir"
+              go mod init semverifier-masterminds-caret-probe >/dev/null
+              go mod edit -require=github.com/Masterminds/semver/v3@v3.0.0
+              go mod edit -replace=github.com/Masterminds/semver/v3="$probe_dir/semver"
+              output="$(go run .)"
+              printf '%s\t%s\n' "$label" "$output"
+              test "$output" = "$expected"
+            )
+          }
+
+          run_probe \
+            baseline \
+            https://github.com/Masterminds/semver.git \
+            dd2b995c61c39ddd668b23ac919b04d607be35ab \
+            "stable=false default-prerelease=false included-prerelease=false"
+
+          run_probe \
+            pr-316 \
+            https://github.com/jackwalkerlabs/semver.git \
+            8fd2b4b3978ebb17cd8d2015186270cffed1c473 \
+            "stable=true default-prerelease=false included-prerelease=false"
+
+          run_probe \
+            pr-319 \
+            https://github.com/TastyHeadphones/semver.git \
+            43e5010ceb23aa60e025a32302d54d36949b9cbb \
+            "stable=true default-prerelease=false included-prerelease=true"
+
       - name: Concrete intersection witness probe
         run: node tools/conformance/node-semver-intersects.js
 
