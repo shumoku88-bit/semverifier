@@ -24,16 +24,20 @@ oracle that existing implementations can be checked against.
 
 ## Current checkpoint
 
-Range-intersection witness search is now proved sound and complete for the
-modeled semantics. The finite critical-boundary pool is complete, every
-semantic intersection produces a concrete returned witness, and
-`findIntersectionWitness? = none` is proved equivalent to semantic
-disjointness.
+Range-intersection witness search and range-subset counterexample search are
+both proved sound and complete for the modeled semantics.
 
-The verified search is now exposed through a thin public CLI. The executable
-parses the existing supported range syntax and delegates intersection directly
-to the proved `Range.findIntersectionWitness?` kernel. See
-[docs/NEXT.md](docs/NEXT.md) for the next validation phase.
+For intersection, every semantic overlap produces a concrete returned witness
+and `findIntersectionWitness? = none` is equivalent to semantic disjointness.
+
+For subset, every semantic failure produces a concrete version accepted by the
+left range and rejected by the right range, and
+`findSubsetCounterexample? = none` is equivalent to `Range.SubsetOf`.
+Both searches reuse the same finite critical-boundary pool.
+
+The verified searches are exposed through a thin public CLI. See
+[docs/SUBSET_ORACLE.md](docs/SUBSET_ORACLE.md) for the subset proof and audit
+checkpoint, and [docs/NEXT.md](docs/NEXT.md) for validation history.
 
 ## CLI
 
@@ -55,9 +59,19 @@ A proved-empty intersection prints:
 disjoint
 ```
 
+Query verified subset with:
+
+```sh
+lake exe semverifier subset ">=1.2.0 <2.0.0" ">=1.0.0 <3.0.0"
+```
+
+A proved subset prints `subset`. If subset fails, the CLI prints a concrete
+`counterexample<TAB>version` accepted by the left range and rejected by the
+right range.
+
 Parse failures are reported separately on stderr and return a non-zero exit
 status. The CLI intentionally contains no independent range logic; it is an
-adapter around the existing parser and verified search.
+adapter around the existing parser and verified searches.
 
 ## Range syntax milestone
 
