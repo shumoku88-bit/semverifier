@@ -88,7 +88,7 @@ private theorem listAll_eq_false_of_mem_false
         | false =>
             simp [hHead]
         | true =>
-            simp [hHead, ih item hTail hFalse]
+            simp [hHead, ih hTail]
 
 private theorem exists_mem_false_of_listAll_eq_false
     {α : Type}
@@ -155,7 +155,7 @@ private theorem listAny_eq_true_of_mem_true
         | true =>
             simp [hHead]
         | false =>
-            simp [hHead, ih item hTail hTrue]
+            simp [hHead, ih hTail]
 
 /--
 One primitive condition that witnesses rejection by a source comparator.
@@ -195,7 +195,8 @@ private theorem rejectingComparator_bound
       | gt => rfl
       | gte => rfl
       | eq =>
-          cases Version.precedence witness bound <;> rfl
+          cases hPrecedence : Version.precedence witness bound <;>
+            simp [rejectingComparator, hPrecedence]
 
 private theorem rejectingComparator_satisfies_of_source_false
     (source : Comparator)
@@ -434,7 +435,7 @@ private theorem comparatorSet_rejection_reason
   | true =>
       cases hAdmission : set.prereleaseAdmitted witness with
       | false =>
-          exact Or.inr hAdmission
+          exact Or.inr rfl
       | true =>
           simp [hAll, hAdmission] at hReject
 
@@ -843,40 +844,6 @@ private theorem stable_subset_counterexample_candidate
       dom.satisfies candidate = false := by
     apply range_false_of_all_sets_false
     intro rightSet hRightSet
-    have hRightCombined :
-        ∀ comparator ∈
-            (counterexampleComparatorSet
-              rightSet dom witness).comparators,
-          comparator.satisfies candidate = true := by
-      intro comparator hComparator
-      rcases
-          List.mem_append.mp hComparator with
-        hInRight | hInRejecting
-      · have hRightWitness :=
-          set_false_of_range_false
-            dom witness rightSet hRightSet hDomFalse
-        rcases
-            exists_failed_comparator_of_stable_rejection
-              rightSet witness
-              hWitnessStable hRightWitness with
-          ⟨source, hSource, hSourceFalse⟩
-        -- A right-set primitive need not belong to the synthetic conjunction
-        -- unless it was failed by the witness. This branch is never needed by
-        -- the rejection proof below.
-        cases hSourceValue : comparator.satisfies candidate with
-        | true => exact hSourceValue
-        | false =>
-            exact False.elim (by
-              have := hSourceFalse
-              contradiction)
-      · exact
-          hCombinedPrimitive comparator
-            (by
-              simp [
-                combined,
-                counterexampleComparatorSet,
-                hInRejecting
-              ])
     have hRightWitness :=
       set_false_of_range_false
         dom witness rightSet hRightSet hDomFalse
