@@ -205,16 +205,21 @@ theorem findSubsetCounterexample?_none_iff_subset
   constructor
   · intro hNone
     intro candidate hSub
-    by_contra hDom
-    have hNotSubset : ¬ SubsetOf sub dom := by
-      intro hSubset
-      exact hDom (hSubset candidate hSub)
-    rcases
-        findSubsetCounterexample?_complete
-          sub dom hCandidates hNotSubset with
-      ⟨found, hSome⟩
-    rw [hNone] at hSome
-    contradiction
+    cases hDom : dom.satisfies candidate with
+    | true =>
+        exact hDom
+    | false =>
+        have hNotSubset : ¬ SubsetOf sub dom := by
+          intro hSubset
+          have hDomTrue := hSubset candidate hSub
+          unfold Contains at hDomTrue
+          simp [hDom] at hDomTrue
+        rcases
+            findSubsetCounterexample?_complete
+              sub dom hCandidates hNotSubset with
+          ⟨found, hSome⟩
+        rw [hNone] at hSome
+        contradiction
   · intro hSubset
     cases hSearch : findSubsetCounterexample? sub dom with
     | none =>
