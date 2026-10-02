@@ -1,4 +1,5 @@
 import Semverifier.RangeIntersection
+import Semverifier.RangeSubset
 
 /-!
 # Semverifier
@@ -19,4 +20,9 @@ both ranges accept exactly the same versions. Executable search is layered on
 top of these meanings. The finite intersection witness search is proved sound
 and complete for the modeled semantics: every semantic intersection produces a
 returned witness, and returning `none` is equivalent to semantic disjointness.
+
+Subset counterexample search reuses the same finite critical-boundary pool and
+is likewise proved sound and complete. A returned version is accepted by the
+left range and rejected by the right range, while returning `none` is proved
+equivalent to the extensional `SubsetOf` proposition.
 -/

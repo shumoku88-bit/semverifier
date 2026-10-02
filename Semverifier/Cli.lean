@@ -1,4 +1,5 @@
 import Semverifier.RangeIntersection
+import Semverifier.RangeSubset
 
 open Semverifier
 
@@ -24,7 +25,7 @@ private def renderVersion (version : Version) : String :=
   core ++ prerelease ++ build
 
 private def usage : String :=
-  "usage: semverifier intersect <left-range> <right-range>"
+  "usage: semverifier <intersect|subset> <left-range> <right-range>"
 
 private def runIntersect (leftRaw rightRaw : String) : IO UInt32 :=
   match Range.parse? leftRaw with
@@ -45,10 +46,31 @@ private def runIntersect (leftRaw rightRaw : String) : IO UInt32 :=
               IO.println "disjoint"
               pure 0
 
+private def runSubset (subRaw domRaw : String) : IO UInt32 :=
+  match Range.parse? subRaw with
+  | none => do
+      IO.eprintln s!"parse-error\tsub\t{subRaw}"
+      pure 2
+  | some sub =>
+      match Range.parse? domRaw with
+      | none => do
+          IO.eprintln s!"parse-error\tdom\t{domRaw}"
+          pure 2
+      | some dom =>
+          match Range.findSubsetCounterexample? sub dom with
+          | some witness => do
+              IO.println s!"counterexample\t{renderVersion witness}"
+              pure 0
+          | none => do
+              IO.println "subset"
+              pure 0
+
 def run (args : List String) : IO UInt32 :=
   match args with
   | ["intersect", leftRaw, rightRaw] =>
       runIntersect leftRaw rightRaw
+  | ["subset", subRaw, domRaw] =>
+      runSubset subRaw domRaw
   | _ => do
       IO.eprintln usage
       pure 64
