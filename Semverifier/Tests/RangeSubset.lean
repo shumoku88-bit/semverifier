@@ -31,3 +31,15 @@ example
         (parsedRange ">=1.2.0 <2.0.0")
         candidate :=
   Range.findSubsetCounterexample?_counterexample _ _ _ h
+
+example :
+    Range.isSubsetOf
+      (parsedRange ">=1.2.0 <2.0.0")
+      (parsedRange ">=1.0.0 <3.0.0") = true := by
+  native_decide
+
+example :
+    Range.isSubsetOf
+      (parsedRange ">=1.0.0 <3.0.0")
+      (parsedRange ">=1.2.0 <2.0.0") = false := by
+  native_decide
