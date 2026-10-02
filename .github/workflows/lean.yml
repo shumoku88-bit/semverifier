@@ -47,18 +47,20 @@ jobs:
           lake env lean Semverifier/Tests/HyphenRange.lean
           lake env lean Semverifier/Tests/RangeHyphenRange.lean
 
-      - name: Check public intersection CLI
+      - name: Check public semantic CLI
         run: |
           lake build semverifier
           witness="$(.lake/build/bin/semverifier intersect '1.2.3-alpha.2' '1.2.3-alpha.2 - 1.2.3')"
           test "$witness" = $'witness\t1.2.3-alpha.2'
           disjoint="$(.lake/build/bin/semverifier intersect '1.x' '2.x')"
           test "$disjoint" = "disjoint"
+
           subset_ok="$(.lake/build/bin/semverifier subset '>=1.2.0 <2.0.0' '>=1.0.0 <3.0.0')"
           test "$subset_ok" = "subset"
           subset_bad="$(.lake/build/bin/semverifier subset '>=1.0.0 <3.0.0' '>=1.2.0 <2.0.0')"
-          case "$subset_bad" in
-                      if .lake/build/bin/semverifier intersect 'not-a-range' '1.x' >/tmp/semverifier-cli-out 2>/tmp/semverifier-cli-err; then
+          printf '%s\n' "$subset_bad" | grep -Eq $'^counterexample\t'
+
+          if .lake/build/bin/semverifier intersect 'not-a-range' '1.x' >/tmp/semverifier-cli-out 2>/tmp/semverifier-cli-err; then
             echo "expected invalid range to fail"
             exit 1
           fi
