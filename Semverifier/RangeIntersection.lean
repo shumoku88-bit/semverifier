@@ -5,7 +5,7 @@ namespace Semverifier
 
 namespace Range
 
-private def minimumStable : Version :=
+def minimumStable : Version :=
   { major := 0, minor := 0, patch := 0 }
 
 private def stableAtCore (version : Version) : Version :=
@@ -976,7 +976,7 @@ appending numeric zero.
 The list may contain duplicates. Keeping generation simple is more important
 than deduplication at this stage.
 -/
-private def boundaryCandidates (comparator : Comparator) : List Version :=
+def boundaryCandidates (comparator : Comparator) : List Version :=
   let bound := comparator.bound
   let stable := stableAtCore bound
   let nextStable := nextStablePatch bound
@@ -2403,7 +2403,7 @@ private theorem stableFloorMaximum_eq_minimum_or_exists_floor
                 List.mem_cons_of_mem head hComparator,
                 hEqual⟩
 
-private def comparatorSetCandidates (set : ComparatorSet) : List Version :=
+def comparatorSetCandidates (set : ComparatorSet) : List Version :=
   set.comparators.flatMap boundaryCandidates
 
 /--
@@ -2774,6 +2774,46 @@ theorem comparatorSetPairStableCandidatesComplete
       by simpa [candidate] using hSatisfies.1,
       by simpa [candidate] using hSatisfies.2⟩
 
+
+/--
+A stable common witness can be reduced to a stable critical-boundary witness.
+
+The stronger shape is useful to downstream proof consumers such as subset
+counterexample search, where preserving stability prevents a synthetic
+prerelease anchor from changing admission semantics.
+-/
+theorem comparatorSetPairStableWitnessCandidate
+    (left right : ComparatorSet)
+    (witness : Version)
+    (hWitnessStable : witness.prerelease.isEmpty = true)
+    (hLeft : left.satisfies witness = true)
+    (hRight : right.satisfies witness = true) :
+    ∃ candidate,
+      candidate ∈ comparatorSetIntersectionCandidates left right ∧
+      candidate.prerelease.isEmpty = true ∧
+      left.satisfies candidate = true ∧
+      right.satisfies candidate = true := by
+  let candidate :=
+    stableFloorMaximum
+      (left.comparators ++ right.comparators)
+  have hCandidate :
+      candidate ∈ comparatorSetIntersectionCandidates left right := by
+    simpa [candidate] using
+      stableFloorMaximum_mem_pair_candidates left right
+  have hCandidateStable :
+      candidate.prerelease.isEmpty = true := by
+    simpa [candidate] using
+      stableFloorMaximum_pair_is_stable left right
+  have hSatisfies :=
+    stableFloorMaximum_pair_satisfies_of_stable_witness
+      left right witness hWitnessStable hLeft hRight
+  exact
+    ⟨candidate,
+      hCandidate,
+      hCandidateStable,
+      by simpa [candidate] using hSatisfies.1,
+      by simpa [candidate] using hSatisfies.2⟩
+
 /--
 Prerelease-witness half of comparator-set-pair candidate completeness.
 
@@ -2910,6 +2950,68 @@ theorem comparatorSetPairPrereleasePrimitiveCandidatesComplete
         (hRightPrimitive comparator hComparator)
 
 /--
+A prerelease common witness can be reduced to a same-core prerelease
+critical-boundary witness while retaining full set satisfaction.
+-/
+theorem comparatorSetPairPrereleaseWitnessCandidate
+    (left right : ComparatorSet)
+    (witness : Version)
+    (hWitnessPrerelease : witness.prerelease.isEmpty = false)
+    (hLeftWitness : left.satisfies witness = true)
+    (hRightWitness : right.satisfies witness = true) :
+    ∃ candidate,
+      candidate ∈ comparatorSetIntersectionCandidates left right ∧
+      candidate.prerelease.isEmpty = false ∧
+      candidate.major = witness.major ∧
+      candidate.minor = witness.minor ∧
+      candidate.patch = witness.patch ∧
+      left.satisfies candidate = true ∧
+      right.satisfies candidate = true := by
+  rcases
+      comparatorSetPairPrereleasePrimitiveCandidatesComplete
+        left right
+        witness hWitnessPrerelease hLeftWitness hRightWitness with
+    ⟨candidate,
+      hCandidate,
+      hCandidatePrerelease,
+      hMajor,
+      hMinor,
+      hPatch,
+      hLeftPrimitive,
+      hRightPrimitive⟩
+  have hLeftAdmission :
+      left.prereleaseAdmitted candidate = true := by
+    exact
+      ComparatorSet.prereleaseAdmitted_of_same_core_as_satisfied
+        left witness candidate
+        hWitnessPrerelease hLeftWitness hCandidatePrerelease
+        hMajor hMinor hPatch
+  have hRightAdmission :
+      right.prereleaseAdmitted candidate = true := by
+    exact
+      ComparatorSet.prereleaseAdmitted_of_same_core_as_satisfied
+        right witness candidate
+        hWitnessPrerelease hRightWitness hCandidatePrerelease
+        hMajor hMinor hPatch
+  have hLeftCandidate :
+      left.satisfies candidate = true :=
+    (ComparatorSet.satisfies_eq_true_iff left candidate).mpr
+      ⟨hLeftPrimitive, hLeftAdmission⟩
+  have hRightCandidate :
+      right.satisfies candidate = true :=
+    (ComparatorSet.satisfies_eq_true_iff right candidate).mpr
+      ⟨hRightPrimitive, hRightAdmission⟩
+  exact
+    ⟨candidate,
+      hCandidate,
+      hCandidatePrerelease,
+      hMajor,
+      hMinor,
+      hPatch,
+      hLeftCandidate,
+      hRightCandidate⟩
+
+/--
 Once the primitive-only prerelease obligation is solved, set-local admission
 is recovered automatically from the original same-core witness.
 -/
@@ -3001,7 +3103,7 @@ theorem comparatorSetPairCandidatesComplete
     (comparatorSetPairStableCandidatesComplete left right)
     (comparatorSetPairPrereleaseCandidatesComplete left right)
 
-private def rangeBoundaryCandidates (range : Range) : List Version :=
+def rangeBoundaryCandidates (range : Range) : List Version :=
   range.sets.flatMap comparatorSetCandidates
 
 /--
