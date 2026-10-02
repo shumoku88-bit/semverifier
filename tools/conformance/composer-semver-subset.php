@@ -144,6 +144,8 @@ $mismatches = 0;
 $semverifierSubsetComposerNot = 0;
 $semverifierNotComposerSubset = 0;
 $witnessConfirmedComposerContradictions = 0;
+$numericEmptyCandidateMismatches = 0;
+$otherMismatches = 0;
 $examples = [];
 
 foreach (tsvRows($subsetPath) as [$subRaw, $domRaw, $leanRaw]) {
@@ -177,6 +179,11 @@ foreach (tsvRows($subsetPath) as [$subRaw, $domRaw, $leanRaw]) {
     }
 
     $mismatches++;
+    if ($subRaw === '<0.0.0') {
+        $numericEmptyCandidateMismatches++;
+    } else {
+        $otherMismatches++;
+    }
 
     $witnessAcceptedByComposerSub = null;
     $witnessRejectedByComposerDom = null;
@@ -226,9 +233,36 @@ echo "subset mismatches: $mismatches\n";
 echo "  Semverifier subset / Composer not-subset: $semverifierSubsetComposerNot\n";
 echo "  Semverifier not-subset / Composer subset: $semverifierNotComposerSubset\n";
 echo "  witness-confirmed Composer contradictions: $witnessConfirmedComposerContradictions\n";
+echo "  <0.0.0 candidate mismatches: $numericEmptyCandidateMismatches\n";
+echo "  all other mismatches: $otherMismatches\n";
+echo "  agreeing pairs excluding <0.0.0 candidate: " .
+    ($comparablePairs - count($fullCompatible)) . "\n";
 
 foreach ($examples as $example) {
     echo "subset-mismatch\t" .
         json_encode($example, JSON_UNESCAPED_SLASHES) .
         "\n";
 }
+
+
+$checkpointOK =
+    $corpusRows === 77568 &&
+    count($audits) === 202 &&
+    count($fullCompatible) === 27 &&
+    $fingerprint($fullCompatible) ===
+        'db380f28b225a2edd0dc9d877310cb914c3d4f45a051d4b7cc65e9a922d3f3df' &&
+    $matrixRows === 40804 &&
+    $comparablePairs === 729 &&
+    $mismatches === 27 &&
+    $semverifierSubsetComposerNot === 27 &&
+    $semverifierNotComposerSubset === 0 &&
+    $witnessConfirmedComposerContradictions === 0 &&
+    $numericEmptyCandidateMismatches === 27 &&
+    $otherMismatches === 0;
+
+if (!$checkpointOK) {
+    fwrite(STDERR, "Composer semver subset audit checkpoint drifted; review output before updating baseline\n");
+    exit(1);
+}
+
+echo "Composer semver subset checkpoint matches the pinned audit\n";
