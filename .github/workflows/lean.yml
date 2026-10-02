@@ -156,6 +156,26 @@ jobs:
             /tmp/semverifier-intersection.tsv \
             "$composer_dir"
 
+      - name: Audit Composer semver subset semantics
+        shell: bash
+        run: |
+          set -euo pipefail
+          php --version
+
+          lake exe semverifierConformanceCorpus > /tmp/semverifier-conformance.tsv
+          lake exe semverifierSubsetMatrix > /tmp/semverifier-subset.tsv
+
+          composer_dir="$(mktemp -d)/semver"
+          git clone --quiet https://github.com/composer/semver.git "$composer_dir"
+          git -C "$composer_dir" checkout --quiet 4221b9ec7fdd42b5b3d939509d55d97b511c52df
+
+          php tools/conformance/composer-semver-subset.php \
+            /tmp/semverifier-conformance.tsv \
+            /tmp/semverifier-subset.tsv \
+            "$composer_dir"
+
+          php tools/conformance/composer-empty-subset-probe.php "$composer_dir"
+
       - name: Concrete intersection witness probe
         run: node tools/conformance/node-semver-intersects.js
 
