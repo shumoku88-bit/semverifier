@@ -178,6 +178,18 @@ echo "ranges with stable semantic mismatch: " . count($stableMismatchRanges) . "
 echo "stable-compatible ranges: " . count($stableCompatible) . "\n";
 echo "full-corpus-compatible ranges: " . count($fullCompatible) . "\n";
 
+$fingerprint = static function (array $ranges): string {
+    $names = array_keys($ranges);
+    sort($names, SORT_STRING);
+    return hash('sha256', implode("\n", $names));
+};
+
+echo "parse-incompatible fingerprint: " . $fingerprint($parseIncompatible) . "\n";
+echo "stable-mismatch-range fingerprint: " . $fingerprint($stableMismatchRanges) . "\n";
+echo "full-mismatch-range fingerprint: " . $fingerprint($fullMismatchRanges) . "\n";
+echo "stable-compatible fingerprint: " . $fingerprint($stableCompatible) . "\n";
+echo "full-compatible fingerprint: " . $fingerprint($fullCompatible) . "\n";
+
 foreach ($parseIncompatible as $audit) {
     echo 'parse-incompatible' . "\t" . json_encode($audit->range) . "\t" . $audit->parseError . "\n";
 }
