@@ -293,3 +293,33 @@ echo "  witness-confirmed Composer contradictions: $witnessConfirmedContradictio
 foreach ($examples as $example) {
     echo "intersection-mismatch\t" . json_encode($example, JSON_UNESCAPED_SLASHES) . "\n";
 }
+
+$checkpointOK =
+    $corpusRows === 77568 &&
+    $stableCorpusRows === 25856 &&
+    count($audits) === 202 &&
+    count($parseIncompatible) === 60 &&
+    $semanticMismatches === 10747 &&
+    $stableSemanticMismatches === 280 &&
+    count($fullMismatchRanges) === 115 &&
+    count($stableMismatchRanges) === 14 &&
+    count($stableCompatible) === 128 &&
+    count($fullCompatible) === 27 &&
+    $fingerprint($parseIncompatible) === 'eee036d58d91eeffb97b2cb741c6eb6a675159a091addd5c23e7c9d8f3604af5' &&
+    $fingerprint($stableMismatchRanges) === '88a9e23896b8c4aeeb2efc4120a39ba9daec15303bf179d12c48e99f290318b8' &&
+    $fingerprint($fullMismatchRanges) === '649d7d9461b9173541cf69b85f6fcca736ad7a1deb536a25ec5a25bf48567818' &&
+    $fingerprint($stableCompatible) === '51d648689b29342443cd908d1031e5b012a26ab8440a4b9dae8723390342a3c4' &&
+    $fingerprint($fullCompatible) === 'db380f28b225a2edd0dc9d877310cb914c3d4f45a051d4b7cc65e9a922d3f3df' &&
+    $intersectionRows === 40804 &&
+    $comparablePairs === 729 &&
+    $intersectionMismatches === 0 &&
+    $semverifierOnly === 0 &&
+    $composerOnly === 0 &&
+    $witnessConfirmedContradictions === 0;
+
+if (!$checkpointOK) {
+    fwrite(STDERR, "Composer semver audit checkpoint drifted; review the complete output before updating the baseline\n");
+    exit(1);
+}
+
+echo "Composer semver intersection checkpoint matches the pinned audit\n";
