@@ -720,52 +720,6 @@ private theorem counterexampleSet_candidate_left_satisfies_prerelease
         hWitnessPrerelease hLeftWitness hCandidatePrerelease
         hMajor hMinor hPatch
 
-private theorem rightSet_rejects_stable_candidate
-    (dom : Range)
-    (witness candidate : Version)
-    (rightSet : ComparatorSet)
-    (hRightSet : rightSet ∈ dom.sets)
-    (hWitnessStable : witness.prerelease.isEmpty = true)
-    (hDomWitness : dom.satisfies witness = false)
-    (hCombined :
-      ∀ comparator ∈
-          (counterexampleComparatorSet
-            rightSet dom witness).comparators,
-        comparator.satisfies candidate = true) :
-    rightSet.satisfies candidate = false := by
-  have hRightWitness :=
-    set_false_of_range_false
-      dom witness rightSet hRightSet hDomWitness
-  rcases
-      exists_failed_comparator_of_stable_rejection
-        rightSet witness hWitnessStable hRightWitness with
-    ⟨source, hSource, hSourceFalse⟩
-  have hRejectingMem :
-      rejectingComparator source witness ∈
-        domainRejectingComparators dom witness :=
-    rejectingComparator_mem_domain
-      dom witness rightSet hRightSet
-      source hSource hSourceFalse
-  have hRejectingCombined :
-      rejectingComparator source witness ∈
-        (counterexampleComparatorSet
-          rightSet dom witness).comparators := by
-    simp [
-      counterexampleComparatorSet,
-      hRejectingMem
-    ]
-  have hRejectingCandidate :=
-    hCombined
-      (rejectingComparator source witness)
-      hRejectingCombined
-  have hSourceCandidateFalse :=
-    source_false_of_rejectingComparator_satisfies
-      source witness candidate
-      hSourceFalse hRejectingCandidate
-  exact
-    comparatorSet_rejects_of_failed_comparator
-      rightSet candidate source hSource hSourceCandidateFalse
-
 private theorem rightSet_rejects_prerelease_candidate
     (dom : Range)
     (leftSet : ComparatorSet)
