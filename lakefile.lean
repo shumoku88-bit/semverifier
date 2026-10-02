@@ -27,3 +27,7 @@ lean_exe semverifierIntersectionMatrix where
 
 lean_exe semverifierSubsetCoverage where
   root := `Semverifier.Conformance.SubsetCoverageMain
+
+
+lean_exe semverifierSubsetMatrix where
+  root := `Semverifier.Conformance.SubsetMatrixMain
